@@ -7,19 +7,17 @@ class ModuleLoader(BaseModuleLoader):
     name = 'Sales and Debt Support'
 
     def load(self):
-        from cbpos.mod.sales.models.ticket import Ticket
-        from cbpos.mod.sales.models.ticketline import TicketLine
+        from cbpos.mod.sales.models import Ticket, TicketLine
         return [Ticket, TicketLine]
 
     def test(self):
-        from cbpos.mod.sales.models.ticket import Ticket
-        from cbpos.mod.sales.models.ticketline import TicketLine
+        from cbpos.mod.sales.models import Ticket, TicketLine
     
         session = cbpos.database.session()
     
-        from cbpos.mod.currency.models.currency import Currency
-        from cbpos.mod.auth.models.user import User
-        from cbpos.mod.customer.models.customer import Customer
+        from cbpos.mod.currency.models import Currency
+        from cbpos.mod.auth.models import User
+        from cbpos.mod.customer.models import Customer
     
         cu1 = session.query(Currency).filter_by(id=1).one()
         cu2 = session.query(Currency).filter_by(id=2).one()
@@ -31,7 +29,7 @@ class ModuleLoader(BaseModuleLoader):
         t1 = Ticket(discount=0, currency=cu1, user=u1, customer=None, comment='Test ticket 1')
         t2 = Ticket(discount=0.3, currency=cu2, user=u1, customer=c1, comment='Test ticket 2')
     
-        from cbpos.mod.stock.models.product import Product
+        from cbpos.mod.stock.models import Product
         
         p1 = session.query(Product).filter_by(id=1).one()
     
@@ -45,8 +43,7 @@ class ModuleLoader(BaseModuleLoader):
         session.commit()
 
     def menu(self):
-        from cbpos.mod.sales.pages import SalesPage
-        #from cbpos.mod.sales.pages import DebtsPage
+        from cbpos.mod.sales.views import SalesPage  # DebtsPage
             
         return [[],
                 [{'parent': 'Main', 'label': 'Sales', 'page': SalesPage, 'rel': 0, 'priority': 5, 'image': self.res('images/menu-sales.png')},

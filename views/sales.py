@@ -2,16 +2,16 @@ from PySide import QtGui, QtCore
 
 import cbpos
 
-import cbpos.mod.auth.models.user as user
-import cbpos.mod.currency.models.currency as currency
+from cbpos.mod.auth.controllers import user
+import cbpos.mod.currency.controllers as currency
 from cbpos.mod.sales.models import Ticket, TicketLine
 
 from cbpos.mod.stock.models import Product
 from cbpos.mod.currency.models import Currency
 
-from cbpos.mod.stock.widgets import ProductCatalog
+from cbpos.mod.stock.views.widgets import ProductCatalog
 
-from cbpos.mod.sales.dialogs import EditDialog, PayDialog
+from cbpos.mod.sales.views.dialogs import EditDialog, PayDialog
 
 class SalesPage(QtGui.QWidget):
     def __init__(self):
@@ -117,7 +117,7 @@ class SalesPage(QtGui.QWidget):
     def populate(self):
         session = cbpos.database.session()
         
-        tc = self.ticket.currency if self.ticket is not None else currency.get_default()
+        tc = self.ticket.currency if self.ticket is not None else currency.default
         items = session.query(Currency.display, Currency).all()
         self.currency.clear()
         for i, item in enumerate(items):
