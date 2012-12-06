@@ -46,6 +46,6 @@ class ModuleLoader(BaseModuleLoader):
         from cbpos.mod.sales.views import SalesPage  # DebtsPage
             
         return [[],
-                [{'parent': 'Main', 'label': 'Sales', 'page': SalesPage, 'rel': 0, 'priority': 5, 'image': self.res('images/menu-sales.png')},
-                 #{'parent': 'Main', 'label': 'Debts', 'page': DebtsPage, 'rel': 0, 'priority': 4, 'image': self.res('images/menu-debts.png')}
+                [{'parent': 'Main', 'label': 'Sales', 'page': SalesPage, 'rel': 0, 'priority': 5, 'image': cbpos.res.sales('images/menu-sales.png')},
+                 #{'parent': 'Main', 'label': 'Debts', 'page': DebtsPage, 'rel': 0, 'priority': 4, 'image': cbpos.res.sales('images/menu-debts.png')}
                  ]]
