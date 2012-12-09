@@ -76,8 +76,7 @@ class Ticket(cbpos.database.Base, common.Item):
     def total(self):
         session = cbpos.database.session()
         total = session.query(func.sum(TicketLine.total)).filter(TicketLine.ticket == self).one()[0]
-        total = float(total)
-        return total*(1-self.discount) if total is not None else 0
+        return float(total)*(1-self.discount) if total is not None else 0
     
     @hybrid_property
     def display(self):
