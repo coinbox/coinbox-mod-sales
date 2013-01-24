@@ -43,9 +43,26 @@ class ModuleLoader(BaseModuleLoader):
         session.commit()
 
     def menu(self):
-        from cbpos.mod.sales.views import SalesPage  # DebtsPage
-            
+        from cbpos.interface import MenuItem
+        from cbpos.mod.sales.views import SalesPage # DebtsPage
+        
+        """
+                 MenuItem('debts', parent='main',
+                          label=cbpos.tr.sales._('Debts'),
+                          icon=cbpos.res.sales('images/menu-debts.png'),
+                          rel=0,
+                          priority=4,
+                          page=DebtsPage
+                          )
+        """
+        
         return [[],
-                [{'parent': 'Main', 'label': 'Sales', 'page': SalesPage, 'rel': 0, 'priority': 5, 'image': cbpos.res.sales('images/menu-sales.png')},
-                 #{'parent': 'Main', 'label': 'Debts', 'page': DebtsPage, 'rel': 0, 'priority': 4, 'image': cbpos.res.sales('images/menu-debts.png')}
-                 ]]
+                [MenuItem('sales', parent='main',
+                          label=cbpos.tr.sales._('Sales'),
+                          icon=cbpos.res.sales('images/menu-sales.png'),
+                          rel=0,
+                          priority=5,
+                          page=SalesPage
+                          )
+                 ]
+                ]
