@@ -10,107 +10,121 @@ from cbpos.mod.stock.models import Product
 from cbpos.mod.currency.models import Currency
 
 from cbpos.mod.stock.views.widgets import ProductCatalog
+from cbpos.mod.customer.views.dialogs import CustomerChooserDialog
 
 from cbpos.mod.sales.views.dialogs import EditDialog, PayDialog
+from cbpos.mod.sales.views.widgets import TotalPanel, LogoPanel, TicketTable
 
 class SalesPage(QtGui.QWidget):
     def __init__(self):
         super(SalesPage, self).__init__()
-
-        self.tickets = QtGui.QComboBox()
-        self.tickets.setEditable(False)
-        self.tickets.activated[int].connect(self.onTicketChanged)
-
-        ticketButtonBox = QtGui.QDialogButtonBox()
-        
-        self.newTicketBtn = ticketButtonBox.addButton("New", QtGui.QDialogButtonBox.ActionRole)
-        self.newTicketBtn.pressed.connect(self.onNewTicketButton)
-        
-        self.closeTicketBtn = ticketButtonBox.addButton("Close", QtGui.QDialogButtonBox.ActionRole)
-        self.closeTicketBtn.pressed.connect(self.onCloseTicketButton)
-        
-        self.cancelTicketBtn = ticketButtonBox.addButton("Cancel", QtGui.QDialogButtonBox.DestructiveRole)
-        self.cancelTicketBtn.pressed.connect(self.onCancelTicketButton)
-        
-        topBar = QtGui.QHBoxLayout()
-        topBar.addWidget(self.tickets, 0, QtCore.Qt.AlignLeft)
-        topBar.addWidget(ticketButtonBox, 0, QtCore.Qt.AlignLeft)
-        
-        ticketlineButtonBox = QtGui.QDialogButtonBox(QtCore.Qt.Vertical)
-        
-        self.newTicketlineBtn = ticketlineButtonBox.addButton("New", QtGui.QDialogButtonBox.ActionRole)
-        self.newTicketlineBtn.pressed.connect(self.onNewTicketlineButton)
-        
-        self.editTicketlineBtn = ticketlineButtonBox.addButton("Edit", QtGui.QDialogButtonBox.ActionRole)
-        self.editTicketlineBtn.pressed.connect(self.onEditTicketlineButton)
-        
-        self.plusTicketlineBtn = ticketlineButtonBox.addButton("+", QtGui.QDialogButtonBox.ActionRole)
-        self.plusTicketlineBtn.pressed.connect(self.onPlusTicketlineButton)
-        
-        self.minusTicketlineBtn = ticketlineButtonBox.addButton("-", QtGui.QDialogButtonBox.ActionRole)
-        self.minusTicketlineBtn.pressed.connect(self.onMinusTicketlineButton)
-
-        self.ticketTable = QtGui.QTableWidget()
-        self.ticketTable.setColumnCount(5)
-        self.ticketTable.verticalHeader().setVisible(False)
-        self.ticketTable.setHorizontalHeaderLabels(("Description", "Price", "Amount", "Discount", "Total"))
-        self.ticketTable.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.ticketTable.currentCellChanged.connect(self.onTicketlineItemChanged)
-        self.ticketTable.cellDoubleClicked.connect(self.onTicketlineItemActivate)
-        
-        #TODO: the headers in the table are too big. the list won't appear completely, solution (?)
-        # already using resizeColumns to contents in populate() after adding columns
-        """
-        header = self.ticketTable.horizontalHeader()
-        font = QtGui.QFont()
-        font.setPointSize(8) # or 6? it's too small 6...
-        header.setFont(font)
-        """
-        
-        self.code = QtGui.QLineEdit()
-        self.code.returnPressed.connect(self.onCodeEnter)
-        
-        self.currency = QtGui.QComboBox()
-        self.currency.setEditable(False)
-        self.currency.activated[int].connect(self.onCurrencyChanged)
         
         self.customer = QtGui.QLineEdit()
         self.customer.setReadOnly(True)
+        self.customer.setPlaceholderText(cbpos.tr.sales._('No customer selected'))
+        
+        self.customerBtn = QtGui.QPushButton(cbpos.tr.sales._('Choose'))
+        
+        self.tickets = QtGui.QComboBox()
+        self.tickets.setEditable(False)
+        
+        self.newTicketBtn = QtGui.QPushButton(cbpos.tr.sales._("New"))
+        
+        self.ticketTable = TicketTable()
+        
+        self.currency = QtGui.QComboBox()
+        self.currency.setEditable(False)
         
         self.discount = QtGui.QDoubleSpinBox()
         self.discount.setRange(0, 100)
         self.discount.setSuffix('%')
-        self.discount.valueChanged.connect(self.onDiscountValueChanged)
         
-        self.total = QtGui.QLineEdit()
-        self.total.setReadOnly(True)
+        self.total = TotalPanel()
         
-        info = QtGui.QFormLayout()
-        info.setSpacing(10)
-        rows = (('Barcode', self.code),
-                ('Currency', self.currency),
-                ('Customer', self.customer),
-                ('Discount', self.discount),
-                ('Total', self.total)
-                )
-        [info.addRow(*row) for row in rows]
+        self.logo = LogoPanel()
         
-        #self.catalog = QtGui.QListWidget()
+        self.catalogLbl = QtGui.QLabel(cbpos.tr.sales._("Choose a product"))
         self.catalog = ProductCatalog()
         
-        layout = QtGui.QGridLayout()
-        layout.addLayout(topBar, 0, 0, 1, 2, QtCore.Qt.AlignLeft)
+        self.payBtn = QtGui.QPushButton(cbpos.tr.sales._("Pay"))
+        self.cancelBtn = QtGui.QPushButton(cbpos.tr.sales._("Cancel"))
         
-        layout.addWidget(ticketlineButtonBox, 1, 0)
-        layout.addWidget(self.ticketTable, 1, 1)
+        layout = QtGui.QVBoxLayout()
         
-        layout.addLayout(info, 0, 2, 2, 1)
+        topOptions = QtGui.QHBoxLayout()
+        topOptions.addWidget(self.customer)
+        topOptions.addWidget(self.customerBtn)
+        topOptions.addWidget(self.tickets)
+        topOptions.addWidget(self.newTicketBtn)
         
-        layout.addWidget(self.catalog, 2, 0, 1, 3)
+        topOptions.setStretch(0, 1)
+        topOptions.setStretch(1, 0)
+        topOptions.setStretch(2, 1)
+        topOptions.setStretch(3, 0)
         
-        layout.setColumnStretch(1, 1)
-
+        bottomOptions = QtGui.QHBoxLayout()
+        bottomOptions.addWidget(self.currency)
+        bottomOptions.addStretch(1)
+        bottomOptions.addWidget(self.discount)
+        
+        bottomOptions.setStretch(0, 1)
+        bottomOptions.setStretch(1, 1)
+        bottomOptions.setStretch(2, 0)
+        
+        buttons = QtGui.QHBoxLayout()
+        buttons.addWidget(self.payBtn)
+        buttons.addWidget(self.cancelBtn)
+        
+        buttons.setStretch(0, 1)
+        buttons.setStretch(1, 1)
+        
+        size_policy = QtGui.QSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
+        size_policy.setVerticalStretch(1)
+        size_policy.setHorizontalStretch(1)
+        self.payBtn.setSizePolicy(size_policy)
+        self.cancelBtn.setSizePolicy(QtGui.QSizePolicy(size_policy))
+        
+        left = QtGui.QVBoxLayout()
+        left.addLayout(topOptions)
+        left.addWidget(self.ticketTable)
+        left.addLayout(bottomOptions)
+        
+        right = QtGui.QVBoxLayout()
+        right.addWidget(self.logo)
+        right.addWidget(self.catalogLbl)
+        right.addWidget(self.catalog)
+        
+        top = QtGui.QHBoxLayout()
+        top.addLayout(left)
+        top.addLayout(right)
+        
+        bottom = QtGui.QHBoxLayout()
+        bottom.addWidget(self.total)
+        bottom.addLayout(buttons)
+        
+        bottom.setStretch(0, 1)
+        bottom.setStretch(1, 1)
+        
+        layout.addLayout(top)
+        layout.addLayout(bottom)
+        
         self.setLayout(layout)
+        
+        # Signals
+        self.customerBtn.pressed.connect(self.onCustomerButton)
+        self.tickets.activated[int].connect(self.onTicketChanged)
+        self.newTicketBtn.pressed.connect(self.onNewTicketButton)
+        
+        #self.ticketTable.currentCellChanged.connect(self.onTicketlineItemChanged)
+        #self.ticketTable.cellDoubleClicked.connect(self.onTicketlineItemActivate)
+        
+        self.currency.activated[int].connect(self.onCurrencyChanged)
+        self.discount.valueChanged.connect(self.onDiscountValueChanged)
+        
+        self.payBtn.pressed.connect(self.onCloseTicketButton)
+        self.cancelBtn.pressed.connect(self.onCancelTicketButton)
+        
+        self.catalog.childSelected.connect(self.onProductCatalogItemActivate)
         
         self.setCurrentTicket(None)
         
@@ -124,7 +138,6 @@ class SalesPage(QtGui.QWidget):
             self.currency.addItem(*item)
             if item[1] == tc:
                 self.currency.setCurrentIndex(i)
-        self.currency.setEnabled(True)
 
         ts = session.query(Ticket).filter(~Ticket.closed).all()
         self.tickets.clear()
@@ -138,58 +151,30 @@ class SalesPage(QtGui.QWidget):
         self.tickets.setCurrentIndex(i)
 
         if self.ticket is None:
-            self.customer.setText('[None]')
+            self.customer.setText('')
             self.discount.setValue(0)
-            self.total.setText(tc.format(0))
+            self.total.setValue(tc.format(0), "0%", tc.format(0))
             
-            self.ticketTable.clearContents()
-            self.ticketTable.setRowCount(0)
+            self.ticketTable.empty()
         else:
             c = self.ticket.customer
-            self.customer.setText('[None]' if c is None else c.name)
+            self.customer.setText('' if c is None else c.name)
             self.discount.setValue(self.ticket.discount*100.0)
-            self.total.setText(tc.format(self.ticket.total))
+            self.total.setValue(tc.format(self.ticket.subtotal), "0%", tc.format(self.ticket.total))
             
-            tls = self.ticket.ticketlines
-            tc = self.ticket.currency
-            self.ticketTable.setRowCount(len(tls))
-            for row, tl in enumerate(tls):
-                cols = (('* ' if tl.is_edited else '')+tl.description,
-                 tc.format(tl.sell_price),
-                 'x%d' % (tl.amount,),
-                 '%d%%' % (tl.discount*100,),
-                 tc.format(tl.total))
-                for col, item_text in enumerate(cols):
-                    table_item = QtGui.QTableWidgetItem(item_text)
-                    table_item.setData(QtCore.Qt.UserRole+1, tl)
-                    # Items are not enabled
-                    table_item.setFlags(table_item.flags() ^ QtCore.Qt.ItemIsEditable)
-                    self.ticketTable.setItem(row, col, table_item)
-        self.ticketTable.resizeColumnsToContents()
+            self.ticketTable.fill(self.ticket)
 
     def setCurrentTicket(self, t):
         self.ticket = t
         
         enabled = t is not None
-        self.enableTicketActions(enabled)
         self.currency.setEnabled(enabled)
         self.customer.setEnabled(enabled)
+        self.customerBtn.setEnabled(enabled)
         self.discount.setEnabled(enabled)
+        self.payBtn.setEnabled(enabled)
+        self.cancelBtn.setEnabled(enabled)
         self.populate()
-        
-        self.enableTicketlineActions()
-
-    def enableTicketActions(self, enable):
-        self.newTicketBtn.setEnabled(True)
-        self.closeTicketBtn.setEnabled(enable)
-        self.cancelTicketBtn.setEnabled(enable)
-        self.newTicketlineBtn.setEnabled(enable)
-
-    def enableTicketlineActions(self):
-        enable = (self.ticketTable.currentRow() != -1)
-        self.plusTicketlineBtn.setEnabled(enable)
-        self.minusTicketlineBtn.setEnabled(enable)
-        self.editTicketlineBtn.setEnabled(enable)
 
     def _doCheckCurrentTicket(self):
         if self.ticket is None:
@@ -242,11 +227,6 @@ class SalesPage(QtGui.QWidget):
                 payment_method, paid = dlg.payment
                 t.pay(str(payment_method), bool(paid))
                 t.closed = True
-                #evt = pos.Event('sales', pos.EVT_ACTION, action='ticket_paid', ticket=t, user=t.user)
-                #evt2 = pos.Event('sales', pos.EVT_ACTION, 'cashflow', action='income', value=t.total,
-                #                 currency=t.currency, user=t.user)
-                #pos.event_queue.send(evt2)
-                #pos.event_queue.send(evt)
                 self.setCurrentTicket(None)
     
     def onCancelTicketButton(self):
@@ -294,45 +274,28 @@ class SalesPage(QtGui.QWidget):
     def onMinusTicketlineButton(self):
         self._doChangeAmount(-1)
 
-    def OnSashChanged(self, event):
-        event.Skip()
-        position = self.splitter.GetSashPosition()
-        mode = self.splitter.GetSplitMode()
-        split = self.splitter.IsSplit()
-        cbpos.config['mod.sales', 'main_panel_sash_position'] = str(position)
-        cbpos.config['mod.sales', 'main_panel_sash_mode'] = str(mode)
-        cbpos.config['mod.sales', 'main_panel_sash_split'] = '1' if split else ''
-        cbpos.config.save()
-
-    def onTicketlineItemActivate(self):
-        self._doChangeAmount(+1)
-
-    def onTicketlineItemRightClick(self):
-        """This is not used!"""
-        #TODO: should we use this? isn't it useless?
-        # to use it, there is not signal itemRightClicked or similar
-        # def mousePressEvent, view the coords, and self.rowAt/self.columnAt, then _doChangeAmount ?
-        # notice that when right-clicking the cell is the selected (it is the current one...
-        self._doChangeAmount(-1)
-
-    ### Catalog Actions ###
-    def onProductCatalogItemActivate(self):
-        p = self.catalogBook.products.GetValue()
+    def onProductCatalogItemActivate(self, p):
         if p is not None:
             t = self._doCheckCurrentTicket()
             if t:
                 t.addLineFromProduct(p)
                 self.populate()
 
-    def onCustomerCatalogItemActivate(self):
-        c = self.catalogBook.customers.GetValue()
-        if c is not None:
-            t = self._doCheckCurrentTicket()
-            if t:
+    def onCustomerButton(self):
+        t = self._doCheckCurrentTicket()
+        if not t:
+            return
+        dlg = CustomerChooserDialog()
+        dlg.setCustomer(self.ticket.customer)
+        dlg.exec_()
+        if dlg.result() == QtGui.QDialog.Accepted:
+            c = dlg.customer
+            if c is not None:
                 t.update(customer=c, discount=c.discount)
-                self.populate()
+            else:
+                t.update(customer=None, discount=0)
+            self.populate()
 
-    ### Find Product Actions ###
     def onCurrencyChanged(self, index):
         t = self._doCheckCurrentTicket()
         if t:
@@ -342,7 +305,8 @@ class SalesPage(QtGui.QWidget):
             if len(t.ticketlines) == 0:
                 t.update(currency=c)
             else:
-                reply = QtGui.QMessageBox.question(self, 'Change Currency', 'Change sell prices accordingly?')
+                reply = QtGui.QMessageBox.question(self, 'Change Currency', 'Change sell prices accordingly?',
+                                                   QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
                 if reply == QtGui.QMessageBox.No:
                     t.update(currency=c)
                 elif reply == QtGui.QMessageBox.Yes:
@@ -357,28 +321,3 @@ class SalesPage(QtGui.QWidget):
         if t:
             t.update(discount=value/100.0)
         self.populate()
-    
-    def focusBarcode(self):
-        self.code.selectAll()
-        self.code.setFocus()
-
-    def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_F3:
-            self.focusBarcode()
-
-    def onCodeEnter(self):
-        t = self._doCheckCurrentTicket()
-        if not t: return
-        code = self.code.text()
-        session = cbpos.database.session()
-        try:
-            p = session.query(Product).filter_by(code=code).one()
-        except:
-            QtGui.QMessageBox.information(self, 'No match', 'Product with code %s not found.' % (code,))
-            self.focusBarcode()
-            # TODO: add the goTo functionality in the app package
-            #cbpos.goTo('Stock', 'Products')
-        else:
-            t.addLineFromProduct(p)
-            self.populate()
-            self.code.setText('')

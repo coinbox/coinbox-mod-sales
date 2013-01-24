@@ -74,9 +74,21 @@ class Ticket(cbpos.database.Base, common.Item):
 
     @hybrid_property
     def total(self):
+        """
+        Returns the total, including taxes and discounts.
+        """
         session = cbpos.database.session()
         total = session.query(func.sum(TicketLine.total)).filter(TicketLine.ticket == self).one()[0]
         return float(total)*(1-self.discount) if total is not None else 0
+    
+    @hybrid_property
+    def subtotal(self):
+        """
+        Returns the subtotal, excluding any taxes or discounts, e.g. net total.
+        """
+        session = cbpos.database.session()
+        total = session.query(func.sum(TicketLine.subtotal)).filter(TicketLine.ticket == self).one()[0]
+        return float(total) if total is not None else 0
     
     @hybrid_property
     def display(self):

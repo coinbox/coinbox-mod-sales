@@ -47,11 +47,25 @@ class TicketLine(cbpos.database.Base, common.Item):
 
     @hybrid_property
     def total(self):
+        """
+        Returns the total, including taxes and discounts.
+        """
         return self.amount*self.sell_price*(1.0-self.discount)
     
     @total.expression
     def total(self):
         return self.amount*self.sell_price*(1.0-self.discount)
+    
+    @hybrid_property
+    def subtotal(self):
+        """
+        Returns the subtotal, excluding any taxes or discounts, e.g. net total.
+        """
+        return self.amount*self.sell_price
+    
+    @total.expression
+    def subtotal(self):
+        return self.amount*self.sell_price
 
     def __repr__(self):
         return "<TicketLine %s in Ticket #%s>" % (self.id, self.ticket.id)
