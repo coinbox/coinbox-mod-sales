@@ -117,6 +117,7 @@ class SalesPage(QtGui.QWidget):
         
         #self.ticketTable.currentCellChanged.connect(self.onTicketlineItemChanged)
         #self.ticketTable.cellDoubleClicked.connect(self.onTicketlineItemActivate)
+        self.ticketTable.lineDeleted.connect(self.onTicketlineDeleted)
         
         self.currency.activated[int].connect(self.onCurrencyChanged)
         self.discount.valueChanged.connect(self.onDiscountValueChanged)
@@ -273,6 +274,10 @@ class SalesPage(QtGui.QWidget):
     
     def onMinusTicketlineButton(self):
         self._doChangeAmount(-1)
+
+    def onTicketlineDeleted(self, tl):
+        tl.delete()
+        self.populate()
 
     def onProductCatalogItemActivate(self, p):
         if p is not None:

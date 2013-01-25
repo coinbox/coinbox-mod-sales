@@ -48,6 +48,9 @@ class LogoPanel(QtGui.QFrame):
         self.setLayout(layout)
 
 class TicketTable(QtGui.QTableWidget):
+    
+    lineDeleted = QtCore.Signal('QVariant')
+    
     def __init__(self):
         super(TicketTable, self).__init__()
         
@@ -84,7 +87,19 @@ class TicketTable(QtGui.QTableWidget):
                 table_item.setFlags(table_item.flags() ^ QtCore.Qt.ItemIsEditable)
                 self.setItem(row, col, table_item)
             
-            controls_item = QtGui.QPushButton(cbpos.tr.sales._("Delete"))
+            controls_item = QtGui.QPushButton()
+            controls_item.setIcon(QtGui.QIcon.fromTheme('edit-delete'))
+            controls_item.callback = lambda a=tl: self.onDelete(a)
+            controls_item.pressed.connect(controls_item.callback)
             self.setCellWidget(row, col+1, controls_item)
         self.resizeColumnsToContents()
         self.horizontalHeader().setStretchLastSection(True)
+    
+    def currentLine(self):
+        item = self.currentItem()
+        if item is None:
+            return None
+        return item.data(QtCore.Qt.UserRole+1)
+    
+    def onDelete(self, line):
+        self.lineDeleted.emit(line)

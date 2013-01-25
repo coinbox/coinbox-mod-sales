@@ -110,10 +110,15 @@ class Ticket(cbpos.database.Base, common.Item):
         return func.concat('#', self.id)
     
     def addLineFromProduct(self, p):
-        sell_price = currency.convert(p.price, p.currency, self.currency)
-        tl = TicketLine()
-        tl.update(description=p.name, sell_price=sell_price, amount=1, discount=0,
-                  ticket=self, product=p, is_edited=False)
+        session = cbpos.database.session()
+        tls = session.query(TicketLine).filter((TicketLine.product == p) & ~TicketLine.is_edited).all()
+        if len(tls) > 0:
+            tls[0].update(amount=tls[0].amount+1)
+        else:
+            sell_price = currency.convert(p.price, p.currency, self.currency)
+            tl = TicketLine()
+            tl.update(description=p.name, sell_price=sell_price, amount=1, discount=0,
+                      ticket=self, product=p, is_edited=False)
     
     def __repr__(self):
         return "<Ticket %s>" % (self.id,)
