@@ -13,7 +13,6 @@ class PayDialog(QtGui.QDialog):
         self.tabs.setTabPosition(QtGui.QTabWidget.West)
         self.tabs.setTabsClosable(False)
         self.tabs.setIconSize(QtCore.QSize(32, 32))
-        self.tabs.setDocumentMode(True)
         
         self.due = QtGui.QLineEdit()
         self.due.setReadOnly(True)
