@@ -2,23 +2,25 @@ from PySide import QtGui, QtCore
 
 import cbpos
 
+logger = cbpos.get_logger(__name__)
+
 class TotalPanel(QtGui.QFrame):
     
     def __init__(self):
         super(TotalPanel, self).__init__()
-        self.subtotal = QtGui.QLabel('$0.00')
-        self.tax = QtGui.QLabel('$0.00')
-        self.total = QtGui.QLabel('$0.00')
+        self.subtotal = QtGui.QLabel('-')
+        self.tax = QtGui.QLabel('-')
+        self.total = QtGui.QLabel('-')
         
         self.setFrameShape(QtGui.QFrame.StyledPanel)
         self.setFrameShadow(QtGui.QFrame.Sunken)
         
         layout = QtGui.QGridLayout()
-        layout.addWidget(QtGui.QLabel("Subtotal"), 0, 0)
+        layout.addWidget(QtGui.QLabel(cbpos.tr.sales._("Subtotal")), 0, 0)
         layout.addWidget(self.subtotal, 0, 1)
-        layout.addWidget(QtGui.QLabel("Tax"), 1, 0)
+        layout.addWidget(QtGui.QLabel(cbpos.tr.sales._("Tax")), 1, 0)
         layout.addWidget(self.tax, 1, 1)
-        layout.addWidget(QtGui.QLabel("Total"), 2, 0)
+        layout.addWidget(QtGui.QLabel(cbpos.tr.sales._("Total")), 2, 0)
         layout.addWidget(self.total, 2, 1)
         
         layout.setColumnStretch(0, 1)
@@ -71,6 +73,8 @@ class TicketTable(QtGui.QTableWidget):
         self.setRowCount(len(tls))
         # This is important so that the row numbers do not change while adding 2 items on the same line
         self.setSortingEnabled(False)
+        
+        icon = QtGui.QIcon.fromTheme('edit-delete')
         for row, tl in enumerate(tls):
             cols = (
                     ('* ' if tl.is_edited else ''),
@@ -87,8 +91,13 @@ class TicketTable(QtGui.QTableWidget):
                 table_item.setFlags(table_item.flags() ^ QtCore.Qt.ItemIsEditable)
                 self.setItem(row, col, table_item)
             
-            controls_item = QtGui.QPushButton()
-            controls_item.setIcon(QtGui.QIcon.fromTheme('edit-delete'))
+            # Check if the icon is available, or fall back to text
+            if icon.isNull():
+                controls_item = QtGui.QPushButton(cbpos.tr.sales._('Delete'))
+            else:
+                controls_item = QtGui.QPushButton()
+                controls_item.setIcon(icon)
+            
             controls_item.callback = lambda a=tl: self.onDelete(a)
             controls_item.pressed.connect(controls_item.callback)
             self.setCellWidget(row, col+1, controls_item)

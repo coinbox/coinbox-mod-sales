@@ -2,12 +2,7 @@ from PySide import QtGui, QtCore
 
 import cbpos
 
-from cbpos.mod.auth.controllers import user
-import cbpos.mod.currency.controllers as currency
-from cbpos.mod.sales.models import Ticket, TicketLine
-
-from cbpos.mod.stock.models import Product
-from cbpos.mod.currency.models import Currency
+from cbpos.mod.sales.controllers import SalesManager, TicketSelectionException
 
 from cbpos.mod.stock.views.widgets import ProductCatalog
 from cbpos.mod.customer.views.dialogs import CustomerChooserDialog
@@ -18,6 +13,8 @@ from cbpos.mod.sales.views.widgets import TotalPanel, LogoPanel, TicketTable
 class SalesPage(QtGui.QWidget):
     def __init__(self):
         super(SalesPage, self).__init__()
+        
+        self.manager = SalesManager()
         
         self.customer = QtGui.QLineEdit()
         self.customer.setReadOnly(True)
@@ -36,7 +33,8 @@ class SalesPage(QtGui.QWidget):
         self.currency.setEditable(False)
         
         self.discount = QtGui.QDoubleSpinBox()
-        self.discount.setRange(0, 100)
+        self.discount.setRange(0.0, 100.0)
+        self.discount.setSingleStep(5.0)
         self.discount.setSuffix('%')
         
         self.total = TotalPanel()
@@ -120,7 +118,7 @@ class SalesPage(QtGui.QWidget):
         self.ticketTable.lineDeleted.connect(self.onTicketlineDeleted)
         
         self.currency.activated[int].connect(self.onCurrencyChanged)
-        self.discount.valueChanged.connect(self.onDiscountValueChanged)
+        self.discount.editingFinished.connect(self.onDiscountValueChanged)
         
         self.payBtn.pressed.connect(self.onCloseTicketButton)
         self.cancelBtn.pressed.connect(self.onCancelTicketButton)
@@ -130,43 +128,46 @@ class SalesPage(QtGui.QWidget):
         self.setCurrentTicket(None)
         
     def populate(self):
-        session = cbpos.database.session()
         
-        tc = self.ticket.currency if self.ticket is not None else currency.default
-        items = session.query(Currency.display, Currency).all()
+        # Set the Ticket field
+        t = self.manager.ticket
+        selected_index = -1
+        
+        self.tickets.clear()
+        for i, (label, item) in enumerate(self.manager.list_tickets()):
+            self.tickets.addItem(label, item)
+            if item == t:
+                selected_index = i
+        self.tickets.setCurrentIndex(selected_index)
+        
+        # Set the Currency field
+        tc = self.manager.currency
         self.currency.clear()
-        for i, item in enumerate(items):
-            self.currency.addItem(*item)
-            if item[1] == tc:
+        for i, (label, item) in enumerate(self.manager.list_currencies()):
+            self.currency.addItem(label, item)
+            if item == tc:
                 self.currency.setCurrentIndex(i)
 
-        ts = session.query(Ticket).filter(~Ticket.closed).all()
-        self.tickets.clear()
-        for i, t in enumerate(ts):
-            label = 'Ticket #%s' % (t.id,)
-            self.tickets.addItem(label, t)
-        try:
-            i = ts.index(self.ticket)
-        except ValueError:
-            i = -1
-        self.tickets.setCurrentIndex(i)
+        # Set the Customer field
+        if self.manager.customer is None:
+            self.customer.setText("")
+        else:
+            self.customer.setText(self.manager.customer.display)
+        
+        # Set the Discount field
+        self.discount.setValue(self.manager.discount)
+        
+        # Set the Total field
+        self.total.setValue(self.manager.subtotal, self.manager.taxes, self.manager.total)
 
-        if self.ticket is None:
-            self.customer.setText('')
-            self.discount.setValue(0)
-            self.total.setValue(tc.format(0), "0%", tc.format(0))
-            
+        # Fill the ticketlines table
+        if self.manager.ticket is None:
             self.ticketTable.empty()
         else:
-            c = self.ticket.customer
-            self.customer.setText('' if c is None else c.name)
-            self.discount.setValue(self.ticket.discount*100.0)
-            self.total.setValue(tc.format(self.ticket.subtotal), "0%", tc.format(self.ticket.total))
-            
-            self.ticketTable.fill(self.ticket)
+            self.ticketTable.fill(self.manager.ticket)
 
     def setCurrentTicket(self, t):
-        self.ticket = t
+        self.manager.ticket = t
         
         enabled = t is not None
         self.currency.setEnabled(enabled)
@@ -175,37 +176,32 @@ class SalesPage(QtGui.QWidget):
         self.discount.setEnabled(enabled)
         self.payBtn.setEnabled(enabled)
         self.cancelBtn.setEnabled(enabled)
+        
         self.populate()
 
-    def _doCheckCurrentTicket(self):
-        if self.ticket is None:
-            QtGui.QMessageBox.warning(self, 'No ticket', 'Select a ticket.')
-            return None
-        else:
-            return self.ticket
+    def warnTicketSelection(self):
+        QtGui.QMessageBox.warning(self, cbpos.tr.sales._('No ticket'), cbpos.tr.sales._('Select a ticket.'))
+    
+    def warnTicketlineSelection(self):
+        QtGui.QMessageBox.warning(self, cbpos.tr.sales._('No ticketline'), cbpos.tr.sales._('Select a ticketline.'))
 
-    def _doCheckCurrentTicketline(self):
-        item = self.ticketTable.currentItem()
-        if item is None:
-            QtGui.QMessageBox.warning(self, 'No ticketline', 'Select a ticketline.')
-            return None
-        else:
-            return item.data(QtCore.Qt.UserRole+1)
-
-    def _doChangeAmount(self, inc):
-        t = self._doCheckCurrentTicket()
-        tl = self._doCheckCurrentTicketline()
-        if t and tl:
-            new_amount = tl.amount+inc
-            if new_amount>0:
-                p = tl.product
-                if p is not None and p.in_stock and p.quantity<new_amount:
-                    QtGui.QMessageBox.warning(self, 'Warning', 'Amount exceeds the product quantity in stock!')
-                tl.update(amount=new_amount)
-            else:
-                tl.delete()
-                self.enableTicketlineActions()
-            self.populate()
+    def addAmount(self, inc):
+        if self.manager.ticket is None:
+            self.warnTicketSelection()
+            return
+        
+        tl = self.ticketTable.currentLine()
+        if tl is None:
+            self.warnTicketlineSelection()
+            return
+        
+        try:
+            self.manager.set_ticketline_amount(tl.amount+inc)
+        except ValueError as e:
+            QtGui.QMessageBox.warning(self, 'Warning', 'Amount exceeds the product quantity in stock!')
+            self.manager.set_ticketline_amount(tl.amount+inc, force=True)
+        #self.enableTicketlineActions()
+        self.populate()
 
     #####################
     #########   #########
@@ -214,26 +210,27 @@ class SalesPage(QtGui.QWidget):
     #####################
     
     def onNewTicketButton(self):
-        def_c = currency.get_default()
-        t = Ticket()
-        t.update(discount=0, user=user.current, currency=def_c)
-        self.setCurrentTicket(t)
+        self.setCurrentTicket(self.manager.new_ticket())
     
     def onCloseTicketButton(self):
-        t = self._doCheckCurrentTicket()
-        if t:
-            dlg = PayDialog(t.total, t.currency, t.customer)
-            dlg.exec_()
-            if dlg.payment is not None:
-                payment_method, paid = dlg.payment
-                t.pay(str(payment_method), bool(paid))
-                t.closed = True
-                self.setCurrentTicket(None)
+        t = self.manager.ticket
+        if t is None:
+            self.warnTicketSelection()
+            return
+        
+        dlg = PayDialog(t.total, t.currency, t.customer)
+        dlg.exec_()
+        if dlg.payment is not None:
+            payment_method, paid = dlg.payment
+            self.manager.close_ticket(payment_method, paid)
+            self.setCurrentTicket(None)
     
     def onCancelTicketButton(self):
-        t = self._doCheckCurrentTicket()
-        if t:
-            t.delete()
+        try:
+            self.manager.cancel_ticket()
+        except TicketSelectionException as e:
+            self.warnTicketSelection()
+        else:
             self.setCurrentTicket(None)
     
     def onTicketChanged(self, index):
@@ -244,85 +241,92 @@ class SalesPage(QtGui.QWidget):
         self.enableTicketlineActions()
     
     def onNewTicketlineButton(self):
-        t = self._doCheckCurrentTicket()
-        if t:
-            data = {'description': '', 'amount': 1, 'sell_price': 0, 'discount': 0, 'ticket': t,
-                    'product': None, 'is_edited': False}
-            _init_data = data.copy()
-            dlg = EditDialog(data)
-            dlg.exec_()
-            if data != _init_data:
-                tl = TicketLine()
-                tl.update(**data)
-                self.populate()
+        t = self.manager.ticket
+        if t is None:
+            self.warnTicketSelection()
+            return
+        
+        data = {'description': '', 'amount': 1, 'sell_price': 0, 'discount': 0, 'ticket': t,
+                'product': None, 'is_edited': False}
+        _init_data = data.copy()
+        dlg = EditDialog(data)
+        dlg.exec_()
+        if data != _init_data:
+            self.manager.add_ticketline(data)
+            self.populate()
     
     def onEditTicketlineButton(self):
-        t = self._doCheckCurrentTicket()
-        tl = self._doCheckCurrentTicketline()
-        if t and tl:
-            data = {'description': '', 'sell_price': 0, 'amount': 1, 'discount': 0, 'product': None, 'is_edited': False}
-            tl.fillDict(data)
-            _init_data = data.copy()
-            dlg = EditDialog(data)
-            dlg.exec_()
-            if data != _init_data:
-                tl.update(**data)
-                self.populate()
+        t = self.manager.ticket
+        if t is None:
+            self.warnTicketSelection()
+            return
+        
+        tl = self.ticketTable.currentLine()
+        if tl is None:
+            self.warnTicketlineSelection()
+            return
+        
+        data = {'description': '', 'sell_price': 0, 'amount': 1, 'discount': 0, 'product': None, 'is_edited': False}
+        tl.fillDict(data)
+        _init_data = data.copy()
+        dlg = EditDialog(data)
+        dlg.exec_()
+        if data != _init_data:
+            self.manager.add_ticketline(data)
+            self.populate()
     
     def onPlusTicketlineButton(self):
-        self._doChangeAmount(+1)
+        self.addAmount(+1)
     
     def onMinusTicketlineButton(self):
-        self._doChangeAmount(-1)
+        self.addAmount(-1)
 
     def onTicketlineDeleted(self, tl):
-        tl.delete()
-        self.populate()
+        try:
+            self.manager.remove_ticketline(tl)
+        except TicketSelectionException as e:
+            self.warnTicketSelection()
+        finally:
+            self.populate()
 
     def onProductCatalogItemActivate(self, p):
         if p is not None:
-            t = self._doCheckCurrentTicket()
-            if t:
-                t.addLineFromProduct(p)
+            try:
+                self.manager.add_product(p)
+            except TicketSelectionException as e:
+                self.warnTicketSelection()
+            finally:
                 self.populate()
 
     def onCustomerButton(self):
-        t = self._doCheckCurrentTicket()
-        if not t:
+        t = self.manager.ticket
+        if t is None:
+            self.warnTicketSelection()
             return
+        
         dlg = CustomerChooserDialog()
-        dlg.setCustomer(self.ticket.customer)
+        dlg.setCustomer(t.customer)
         dlg.exec_()
         if dlg.result() == QtGui.QDialog.Accepted:
-            c = dlg.customer
-            if c is not None:
-                t.update(customer=c, discount=c.discount)
-            else:
-                t.update(customer=None, discount=0)
+            self.manager.customer = dlg.customer
             self.populate()
 
     def onCurrencyChanged(self, index):
-        t = self._doCheckCurrentTicket()
-        if t:
-            tc = t.currency
-            index = self.currency.currentIndex()
-            c = self.currency.itemData(index)
-            if len(t.ticketlines) == 0:
-                t.update(currency=c)
-            else:
-                reply = QtGui.QMessageBox.question(self, 'Change Currency', 'Change sell prices accordingly?',
-                                                   QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-                if reply == QtGui.QMessageBox.No:
-                    t.update(currency=c)
-                elif reply == QtGui.QMessageBox.Yes:
-                    for tl in t.ticketlines:
-                        tl.update(sell_price=currency.convert(tl.sell_price, tc, c))
-                    t.update(currency=c)
-            self.setCurrentTicket(t)
+        index = self.currency.currentIndex()
+        c = self.currency.itemData(index)
+        
+        try:
+            self.manager.currency = c
+        except TicketSelectionException as e:
+            self.warnTicketSelection()
+        else:
+            self.populate()
     
     def onDiscountValueChanged(self):
         value = self.discount.value()
-        t = self._doCheckCurrentTicket()
-        if t:
-            t.update(discount=value/100.0)
-        self.populate()
+        try:
+            self.manager.discount = value/100.0
+        except TicketSelectionException as e:
+            self.warnTicketSelection()
+        else:
+            self.populate()

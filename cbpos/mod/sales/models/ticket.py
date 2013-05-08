@@ -73,13 +73,29 @@ class Ticket(cbpos.database.Base, common.Item):
         return cls.date_close != None
 
     @hybrid_property
+    def taxes(self):
+        """
+        Returns the sum of taxes of all ticketlines
+        """
+        session = cbpos.database.session()
+        total_taxes = session.query(func.sum(TicketLine.taxes)).filter(TicketLine.ticket == self).one()[0]
+        return float(total_taxes) if total_taxes is not None else 0 
+
+    @hybrid_property
     def total(self):
         """
         Returns the total, including taxes and discounts.
         """
         session = cbpos.database.session()
-        total = session.query(func.sum(TicketLine.total)).filter(TicketLine.ticket == self).one()[0]
-        return float(total)*(1-self.discount) if total is not None else 0
+        
+        query = session.query(func.sum(TicketLine.total), func.sum(TicketLine.taxes))
+        query = query.filter(TicketLine.ticket == self)
+        total, taxes = query.one()
+        
+        total = float(total) if total is not None else 0
+        taxes = float(taxes) if taxes is not None else 0
+        
+        return total*(1-self.discount)+taxes
     
     @hybrid_property
     def subtotal(self):
@@ -92,17 +108,6 @@ class Ticket(cbpos.database.Base, common.Item):
     
     @hybrid_property
     def display(self):
-        # TODO see if it is a good idea to use another way to number tickets..
-        """
-        base_36 = str_base(self.id, 36).upper()
-        display = ''
-        sep = 3
-        format_str = '{:0>'+str(sep)+'}'
-        for i in range(len(base_36), 0, -sep):
-            display = format_str.format(base_36[max(0, i-sep):i])+'-'+display
-        display = display[:-1] if len(display)>0 else ''
-        return '#'+display
-        """
         return '#%d' % (self.id,)
     
     @display.expression
@@ -122,17 +127,3 @@ class Ticket(cbpos.database.Base, common.Item):
     
     def __repr__(self):
         return "<Ticket %s>" % (self.id,)
-
-def digit_to_char(digit):
-    if digit < 10: return chr(ord('0') + digit)
-    else: return chr(ord('a') + digit - 10)
-
-def str_base(number,base):
-    if number < 0:
-        return '-' + str_base(-number,base)
-    else:
-        (d,m) = divmod(number,base)
-        if d:
-            return str_base(d,base) + digit_to_char(m)
-        else:
-            return digit_to_char(m)

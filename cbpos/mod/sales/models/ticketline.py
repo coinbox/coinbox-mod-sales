@@ -14,6 +14,7 @@ class TicketLine(cbpos.database.Base, common.Item):
     sell_price = Column(Float, nullable=False, default=0)
     amount = Column(Integer, nullable=False, default=1)
     discount = Column(Float, nullable=False, default=0)
+    taxes = Column(Float, nullable=False, default=0)
     is_edited = Column(Boolean, nullable=False, default=False)
     ticket_id = Column(Integer, ForeignKey('tickets.id'), nullable=False)
     product_id = Column(Integer, ForeignKey('products.id'))
@@ -27,7 +28,7 @@ class TicketLine(cbpos.database.Base, common.Item):
             description_edited = ('description' in kwargs and self.description != kwargs['description'])
             price_edited = ('sell_price' in kwargs and self.sell_price != kwargs['sell_price'])
             kwargs.update({'is_edited': (description_edited or price_edited)})
-        common.Item.update(self, **kwargs)
+        super(TicketLine, self).update(**kwargs)
 
     @hybrid_property
     def display(self):
@@ -36,14 +37,6 @@ class TicketLine(cbpos.database.Base, common.Item):
     @display.expression
     def display(self):
         return func.concat(self.ticket.id, '/', self.id)
-
-    @hybrid_property
-    def actual_price(self):
-        return self.sell_price*(1.0-self.discount)
-    
-    @actual_price.expression
-    def actual_price(self):
-        return self.sell_price*(1.0-self.discount)
 
     @hybrid_property
     def total(self):
