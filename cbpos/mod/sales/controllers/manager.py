@@ -30,6 +30,7 @@ class SalesManager(object):
     @ticket.setter
     def ticket(self, t):
         self.__ticket = t
+        self.update_taxes()
     
     def new_ticket(self):
         c = currency.default
