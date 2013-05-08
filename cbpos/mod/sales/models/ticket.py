@@ -7,7 +7,7 @@ import cbpos.mod.currency.controllers as currency
 from cbpos.mod.stock.models.product import Product
 from cbpos.mod.sales.models.ticketline import TicketLine
 
-from sqlalchemy import func, Table, Column, Integer, String, Float, Boolean, Enum, DateTime, MetaData, ForeignKey
+from sqlalchemy import func, cast, Table, Column, Integer, String, Float, Boolean, Enum, DateTime, MetaData, ForeignKey
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method, Comparator
 
@@ -112,7 +112,7 @@ class Ticket(cbpos.database.Base, common.Item):
     
     @display.expression
     def display(self):
-        return func.concat('#', self.id)
+        return '#' + cast(self.id, String)
     
     def addLineFromProduct(self, p):
         session = cbpos.database.session()
