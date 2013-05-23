@@ -19,8 +19,8 @@ class ModuleLoader(BaseModuleLoader):
         from cbpos.mod.auth.models import User
         from cbpos.mod.customer.models import Customer
     
-        cu1 = session.query(Currency).filter_by(id=1).one()
-        cu2 = session.query(Currency).filter_by(id=2).one()
+        cu1 = session.query(Currency).filter_by(id="LBP").one()
+        cu2 = session.query(Currency).filter_by(id="USD").one()
         
         c1 = session.query(Customer).filter_by(id=1).one()
         

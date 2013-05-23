@@ -325,7 +325,7 @@ class SalesPage(QtGui.QWidget):
     def onDiscountValueChanged(self):
         value = self.discount.value()
         try:
-            self.manager.discount = value/100.0
+            self.manager.discount = value
         except TicketSelectionException as e:
             self.warnTicketSelection()
         else:

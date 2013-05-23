@@ -6,15 +6,17 @@ from sqlalchemy import func, Table, Column, Integer, String, Float, Boolean, Met
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method, Comparator
 
+from cbpos.mod.currency.models import CurrencyValue
+
 class TicketLine(cbpos.database.Base, common.Item):
     __tablename__ = 'ticketlines'
 
     id = Column(Integer, primary_key=True)
     description = Column(String(255), nullable=False, default='')
-    sell_price = Column(Float, nullable=False, default=0)
+    sell_price = Column(CurrencyValue(), nullable=False, default=0)
     amount = Column(Integer, nullable=False, default=1)
-    discount = Column(Float, nullable=False, default=0)
-    taxes = Column(Float, nullable=False, default=0)
+    discount = Column(Integer, nullable=False, default=0)
+    taxes = Column(CurrencyValue(), nullable=False, default=0)
     is_edited = Column(Boolean, nullable=False, default=False)
     ticket_id = Column(Integer, ForeignKey('tickets.id'), nullable=False)
     product_id = Column(Integer, ForeignKey('products.id'))
@@ -43,11 +45,11 @@ class TicketLine(cbpos.database.Base, common.Item):
         """
         Returns the total, including taxes and discounts.
         """
-        return self.amount*self.sell_price*(1.0-self.discount)
+        return self.amount*self.sell_price*(100-self.discount)/100
     
     @total.expression
     def total(self):
-        return self.amount*self.sell_price*(1.0-self.discount)
+        return self.amount*self.sell_price*(100-self.discount)/100
     
     @hybrid_property
     def subtotal(self):

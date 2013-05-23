@@ -167,6 +167,7 @@ class SalesManager(object):
     
     @property
     def discount(self):
+        # Returns a value in the range [0-100]
         if self.ticket is None:
             return 0
         else:
@@ -174,6 +175,7 @@ class SalesManager(object):
     
     @discount.setter
     def discount(self, value):
+        # Value is in the range [0-100]
         if self.ticket is None:
             raise TicketSelectionException()
         

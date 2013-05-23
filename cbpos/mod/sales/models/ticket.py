@@ -20,8 +20,8 @@ class Ticket(cbpos.database.Base, common.Item):
     payment_method = Column(Enum('cash', 'cheque', 'voucher', 'card', 'free', 'debt'), nullable=True)
     date_paid = Column(DateTime, nullable=True)
     comment = Column(String(255), nullable=True)
-    discount = Column(Float, nullable=False, default=0)
-    currency_id = Column(Integer, ForeignKey('currencies.id'))
+    discount = Column(Integer, nullable=False, default=0)
+    currency_id = Column(String(3), ForeignKey('currencies.id'))
     customer_id = Column(Integer, ForeignKey('customers.id'), nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
 
@@ -95,7 +95,7 @@ class Ticket(cbpos.database.Base, common.Item):
         total = float(total) if total is not None else 0
         taxes = float(taxes) if taxes is not None else 0
         
-        return total*(1-self.discount)+taxes
+        return total*(100-self.discount)/100+taxes
     
     @hybrid_property
     def subtotal(self):
