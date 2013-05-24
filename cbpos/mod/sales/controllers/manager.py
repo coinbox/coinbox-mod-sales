@@ -125,7 +125,7 @@ class SalesManager(object):
         if self.ticket is None:
             raise TicketSelectionException()
         
-        self.ticket.addLineFromProduct(p)
+        self.ticket.add_product(p)
         self.update_taxes()
     
     def update_taxes(self):

@@ -114,7 +114,7 @@ class Ticket(cbpos.database.Base, common.Item):
     def display(self):
         return '#' + cast(self.id, String)
     
-    def addLineFromProduct(self, p):
+    def add_product(self, p):
         session = cbpos.database.session()
         tls = session.query(TicketLine).filter((TicketLine.product == p) & ~TicketLine.is_edited).all()
         if len(tls) > 0:
