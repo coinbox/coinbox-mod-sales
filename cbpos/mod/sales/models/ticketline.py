@@ -34,7 +34,7 @@ class TicketLine(cbpos.database.Base, common.Item):
 
     @hybrid_property
     def display(self):
-        return str(self.ticket.id)+'/'+str(self.id)
+        return unicode(self.ticket.id)+'/'+unicode(self.id)
     
     @display.expression
     def display(self):

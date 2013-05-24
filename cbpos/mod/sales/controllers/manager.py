@@ -48,12 +48,12 @@ class SalesManager(object):
     def close_ticket(self, payment_method, paid):
         if self.ticket is None:
             raise TicketSelectionException()
-        self.ticket.pay(str(payment_method), bool(paid))
+        self.ticket.pay(unicode(payment_method), bool(paid))
         self.ticket.closed = True
     
     def list_tickets(self):
         session = cbpos.database.session()
-        return session.query(Ticket.display, Ticket).filter(~Ticket.closed)
+        return session.query(Ticket).filter(~Ticket.closed)
     
     @property
     def subtotal(self):
@@ -135,7 +135,7 @@ class SalesManager(object):
     
     def list_currencies(self):
         session = cbpos.database.session()
-        return session.query(Currency.display, Currency)
+        return session.query(Currency)
     
     __currency = None
     @property
@@ -171,7 +171,7 @@ class SalesManager(object):
         if self.ticket is None:
             return 0
         else:
-            return self.ticket.discount*100
+            return self.ticket.discount
     
     @discount.setter
     def discount(self, value):
@@ -179,7 +179,7 @@ class SalesManager(object):
         if self.ticket is None:
             raise TicketSelectionException()
         
-        self.ticket.update(discount=value/100.0)
+        self.ticket.update(discount=value)
     
     def list_customers(self):
         pass

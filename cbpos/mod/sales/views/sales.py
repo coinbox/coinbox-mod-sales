@@ -134,8 +134,8 @@ class SalesPage(QtGui.QWidget):
         selected_index = -1
         
         self.tickets.clear()
-        for i, (label, item) in enumerate(self.manager.list_tickets()):
-            self.tickets.addItem(label, item)
+        for i, item in enumerate(self.manager.list_tickets()):
+            self.tickets.addItem(item.display, item)
             if item == t:
                 selected_index = i
         self.tickets.setCurrentIndex(selected_index)
@@ -143,8 +143,8 @@ class SalesPage(QtGui.QWidget):
         # Set the Currency field
         tc = self.manager.currency
         self.currency.clear()
-        for i, (label, item) in enumerate(self.manager.list_currencies()):
-            self.currency.addItem(label, item)
+        for i, item in enumerate(self.manager.list_currencies()):
+            self.currency.addItem(item.display, item)
             if item == tc:
                 self.currency.setCurrentIndex(i)
 

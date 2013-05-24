@@ -27,7 +27,7 @@ class ModuleLoader(BaseModuleLoader):
         u1 = session.query(User).filter_by(id=1).one()
     
         t1 = Ticket(discount=0, currency=cu1, user=u1, customer=None, comment='Test ticket 1')
-        t2 = Ticket(discount=0.3, currency=cu2, user=u1, customer=c1, comment='Test ticket 2')
+        t2 = Ticket(discount=30, currency=cu2, user=u1, customer=c1, comment='Test ticket 2')
     
         from cbpos.mod.stock.models import Product
         
