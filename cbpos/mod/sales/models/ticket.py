@@ -79,7 +79,7 @@ class Ticket(cbpos.database.Base, common.Item):
         """
         session = cbpos.database.session()
         total_taxes = session.query(func.sum(TicketLine.taxes)).filter(TicketLine.ticket == self).one()[0]
-        return float(total_taxes) if total_taxes is not None else 0 
+        return total_taxes if total_taxes is not None else 0 
 
     @hybrid_property
     def total(self):
@@ -92,8 +92,8 @@ class Ticket(cbpos.database.Base, common.Item):
         query = query.filter(TicketLine.ticket == self)
         total, taxes = query.one()
         
-        total = float(total) if total is not None else 0
-        taxes = float(taxes) if taxes is not None else 0
+        total = total if total is not None else 0
+        taxes = taxes if taxes is not None else 0
         
         return total*(100-self.discount)/100+taxes
     
@@ -104,7 +104,7 @@ class Ticket(cbpos.database.Base, common.Item):
         """
         session = cbpos.database.session()
         total = session.query(func.sum(TicketLine.subtotal)).filter(TicketLine.ticket == self).one()[0]
-        return float(total) if total is not None else 0
+        return total if total is not None else 0
     
     @hybrid_property
     def display(self):
@@ -118,12 +118,13 @@ class Ticket(cbpos.database.Base, common.Item):
         session = cbpos.database.session()
         tls = session.query(TicketLine).filter((TicketLine.product == p) & ~TicketLine.is_edited).all()
         if len(tls) > 0:
-            tls[0].update(amount=tls[0].amount+1)
+            tls[0].amount = tls[0].amount+1
+            return tls[0]
         else:
             sell_price = currency.convert(p.price, p.currency, self.currency)
-            tl = TicketLine()
-            tl.update(description=p.name, sell_price=sell_price, amount=1, discount=0,
-                      ticket=self, product=p, is_edited=False)
+            tl = TicketLine(product=p, sell_price=sell_price)
+            self.ticketlines.append(tl)
+            return tl
     
     def __repr__(self):
         return "<Ticket %s>" % (self.id,)

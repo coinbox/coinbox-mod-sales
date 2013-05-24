@@ -3,6 +3,7 @@ from PySide import QtGui, QtCore
 import cbpos
 
 from cbpos.mod.sales.controllers import SalesManager, TicketSelectionException
+from cbpos.mod.currency.controllers import convert
 
 from cbpos.mod.stock.views.widgets import ProductCatalog
 from cbpos.mod.customer.views.dialogs import CustomerChooserDialog
@@ -27,7 +28,7 @@ class SalesPage(QtGui.QWidget):
         
         self.newTicketBtn = QtGui.QPushButton(cbpos.tr.sales._("New"))
         
-        self.ticketTable = TicketTable()
+        self.ticketTable = TicketTable(self.manager)
         
         self.currency = QtGui.QComboBox()
         self.currency.setEditable(False)
@@ -37,9 +38,9 @@ class SalesPage(QtGui.QWidget):
         self.discount.setSingleStep(5.0)
         self.discount.setSuffix('%')
         
-        self.total = TotalPanel()
+        self.total = TotalPanel(self.manager)
         
-        self.logo = LogoPanel()
+        self.logo = LogoPanel(self.manager)
         
         self.catalogLbl = QtGui.QLabel(cbpos.tr.sales._("Choose a product"))
         self.catalog = ProductCatalog()
@@ -158,13 +159,13 @@ class SalesPage(QtGui.QWidget):
         self.discount.setValue(self.manager.discount)
         
         # Set the Total field
-        self.total.setValue(self.manager.subtotal, self.manager.taxes, self.manager.total)
+        self.total.updateValues()
 
         # Fill the ticketlines table
         if self.manager.ticket is None:
             self.ticketTable.empty()
         else:
-            self.ticketTable.fill(self.manager.ticket)
+            self.ticketTable.fill()
 
     def setCurrentTicket(self, t):
         self.manager.ticket = t

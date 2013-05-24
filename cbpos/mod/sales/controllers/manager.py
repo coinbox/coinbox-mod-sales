@@ -58,23 +58,23 @@ class SalesManager(object):
     @property
     def subtotal(self):
         if self.__ticket is None:
-            return self.currency.format(0)
+            return 0
         else:
-            return self.currency.format(self.ticket.subtotal)
+            return self.ticket.subtotal
     
     @property
     def taxes(self):
         if self.ticket is None:
-            return self.currency.format(0)
+            return 0
         else:
-            return self.currency.format(self.ticket.taxes)
+            return self.ticket.taxes
     
     @property
     def total(self):
         if self.__ticket is None:
-            return self.currency.format(0)
+            return 0
         else:
-            return self.currency.format(self.ticket.total)
+            return self.ticket.total
     
     # Ticket Operations
     
@@ -126,6 +126,8 @@ class SalesManager(object):
             raise TicketSelectionException()
         
         self.ticket.add_product(p)
+        self.ticket.update()
+        
         self.update_taxes()
     
     def update_taxes(self):
@@ -140,10 +142,10 @@ class SalesManager(object):
     __currency = None
     @property
     def currency(self):
-        if self.ticket is not None:
-            return self.ticket.currency
-        elif self.__currency is not None:
+        if self.__currency is not None:
             return self.__currency
+        elif self.ticket is not None:
+            return self.ticket.currency
         else:
             return currency.default
     
@@ -154,6 +156,23 @@ class SalesManager(object):
             return
         
         self.__currency = c
+    
+    def currency_display(self, value, src=None, dst=None):
+        if dst is None:
+            dst = self.currency
+        
+        if src is None:
+            if self.ticket is None:
+                return dst.format(value)
+            
+            src = self.ticket.currency
+        
+        if src == dst:
+            return dst.format(value)
+        else:
+            return dst.format(currency.convert(value, src, dst))
+    
+    def update_ticket_currency(self):
         if self.ticket is not None:
             orig_c = self.currency
             for tl in self.ticket.ticketlines:

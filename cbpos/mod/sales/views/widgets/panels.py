@@ -2,12 +2,17 @@ from PySide import QtGui, QtCore
 
 import cbpos
 
+import babel.numbers
+
 logger = cbpos.get_logger(__name__)
 
 class TotalPanel(QtGui.QFrame):
     
-    def __init__(self):
+    def __init__(self, manager):
         super(TotalPanel, self).__init__()
+        
+        self.manager = manager
+        
         self.subtotal = QtGui.QLabel('-')
         self.tax = QtGui.QLabel('-')
         self.total = QtGui.QLabel('-')
@@ -28,15 +33,22 @@ class TotalPanel(QtGui.QFrame):
         
         self.setLayout(layout)
     
-    def setValue(self, subtotal, tax, total):
+    def updateValues(self):
+        subtotal = self.manager.currency_display(self.manager.subtotal)
+        taxes = self.manager.currency_display(self.manager.taxes)
+        total = self.manager.currency_display(self.manager.total)
+        
         self.subtotal.setText(subtotal)
-        self.tax.setText(tax)
+        self.tax.setText(taxes)
         self.total.setText(total)
 
 class LogoPanel(QtGui.QFrame):
     
-    def __init__(self):
+    def __init__(self, manager):
         super(LogoPanel, self).__init__()
+        
+        self.manager = manager
+        
         self.text = QtGui.QLabel('This is the STORE!')
         
         self.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -53,8 +65,10 @@ class TicketTable(QtGui.QTableWidget):
     
     lineDeleted = QtCore.Signal('QVariant')
     
-    def __init__(self):
+    def __init__(self, manager):
         super(TicketTable, self).__init__()
+        
+        self.manager = manager
         
         self.setColumnCount(7)
         self.verticalHeader().setVisible(False)
@@ -67,9 +81,15 @@ class TicketTable(QtGui.QTableWidget):
         self.setRowCount(0)
         self.resizeColumnsToContents()
 
-    def fill(self, t):
-        tls = t.ticketlines
+    def fill(self):
+        t = self.manager.ticket
+        if t is None:
+            self.empty()
+            return
+        
+        tls = list(t.ticketlines)
         tc = t.currency
+        
         self.setRowCount(len(tls))
         # This is important so that the row numbers do not change while adding 2 items on the same line
         self.setSortingEnabled(False)
@@ -79,11 +99,12 @@ class TicketTable(QtGui.QTableWidget):
             cols = (
                     ('* ' if tl.is_edited else ''),
                     tl.description,
-                    tc.format(tl.sell_price),
-                    'x%d' % (tl.amount,),
-                    '%d%%' % (tl.discount*100,),
-                    tc.format(tl.total)
+                    self.manager.currency_display(tl.sell_price),
+                    u'x{}'.format(babel.numbers.format_number(tl.amount, locale=cbpos.locale)),
+                    babel.numbers.format_percent(tl.discount, locale=cbpos.locale),
+                    self.manager.currency_display(tl.total)
                     )
+            
             for col, item_text in enumerate(cols):
                 table_item = QtGui.QTableWidgetItem(item_text)
                 table_item.setData(QtCore.Qt.UserRole+1, tl)

@@ -12,25 +12,17 @@ class TicketLine(cbpos.database.Base, common.Item):
     __tablename__ = 'ticketlines'
 
     id = Column(Integer, primary_key=True)
-    description = Column(String(255), nullable=False, default='')
-    sell_price = Column(CurrencyValue(), nullable=False, default=0)
+    _description = Column('description', String(255), nullable=False, default='')
+    _sell_price = Column('sell_price', CurrencyValue(), nullable=False, default=0)
     amount = Column(Integer, nullable=False, default=1)
     discount = Column(Integer, nullable=False, default=0)
     taxes = Column(CurrencyValue(), nullable=False, default=0)
-    is_edited = Column(Boolean, nullable=False, default=False)
+    _is_edited = Column('is_edited', Boolean, nullable=False, default=False)
     ticket_id = Column(Integer, ForeignKey('tickets.id'), nullable=False)
     product_id = Column(Integer, ForeignKey('products.id'))
     
     ticket = relationship("Ticket", backref=backref("ticketlines", cascade="all, delete-orphan"))
-    product = relationship("Product", backref="ticketlines")
-
-    def update(self, **kwargs):
-        p = self.product
-        if not self.is_edited and p is not None:
-            description_edited = ('description' in kwargs and self.description != kwargs['description'])
-            price_edited = ('sell_price' in kwargs and self.sell_price != kwargs['sell_price'])
-            kwargs.update({'is_edited': (description_edited or price_edited)})
-        super(TicketLine, self).update(**kwargs)
+    _product = relationship("Product", backref="ticketlines")
 
     @hybrid_property
     def display(self):
@@ -39,6 +31,52 @@ class TicketLine(cbpos.database.Base, common.Item):
     @display.expression
     def display(self):
         return func.concat(self.ticket.id, '/', self.id)
+
+    @hybrid_property
+    def product(self):
+        return self._product
+    
+    @product.setter
+    def product(self, p):
+        self._description = p.name
+        # Does not set the sell price!
+        #self._sell_price = p.sell_price
+        self.amount = 1
+        self.discount = 0
+        self._product = p
+        self._is_edited = False
+
+    @hybrid_property
+    def description(self):
+        return self._description
+    
+    @description.setter
+    def description(self, value):
+        self._description = value
+        if self._product is not None and not self._is_edited and value != self._product.name:
+            self._is_edited = True
+
+    @hybrid_property
+    def sell_price(self):
+        return self._sell_price
+    
+    @sell_price.setter
+    def sell_price(self, value):
+        self._sell_price = value
+        if self._product is not None and not self._is_edited and value != self._product.sell_price:
+            self._is_edited = True
+
+    @hybrid_property
+    def is_edited(self):
+        return self._is_edited
+    
+    @is_edited.setter
+    def is_edited(self, value):
+        if value:
+            self._is_edited = value
+        else:
+            # Cannot set it to not edited, if it is marked as edited
+            pass
 
     @hybrid_property
     def total(self):
