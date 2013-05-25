@@ -38,13 +38,16 @@ class TicketLine(cbpos.database.Base, common.Item):
     
     @product.setter
     def product(self, p):
-        self._description = p.name
-        # Does not set the sell price!
-        #self._sell_price = p.sell_price
-        self.amount = 1
-        self.discount = 0
-        self._product = p
-        self._is_edited = False
+        if p is None:
+            self._product = None
+            self._is_edited = False
+        else:
+            self._description = p.name
+            # Does not set the sell price!
+            # It might need to be converted
+            #self._sell_price = p.sell_price
+            self._product = p
+            self._is_edited = False
 
     @hybrid_property
     def description(self):
