@@ -297,7 +297,10 @@ class DebtPage(AbstractPage):
         if c is not None:
             cc = c.currency
             self.name.setText(c.name)
-            self.maxDebt.setText(cc.format(c.max_debt))
+            if c.max_debt is None:
+                self.maxDebt.setText("")
+            else:
+                self.maxDebt.setText(cc.format(c.max_debt))
             self.currentDebt.setText(cc.format(c.debt))
 
     @property
