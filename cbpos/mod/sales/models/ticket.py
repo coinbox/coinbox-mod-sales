@@ -116,14 +116,18 @@ class Ticket(cbpos.database.Base, common.Item):
     
     def add_product(self, p):
         session = cbpos.database.session()
-        tls = session.query(TicketLine).filter((TicketLine.product == p) & ~TicketLine.is_edited).all()
-        if len(tls) > 0:
-            tls[0].amount = tls[0].amount+1
-            return tls[0]
-        else:
+        tls = session.query(TicketLine).filter((TicketLine.ticket_id == self.id) & \
+                                               (TicketLine.product == p) & \
+                                               ~TicketLine.is_edited
+                                               )
+        tl = tls.first()
+        if tl is None:
             sell_price = currency.convert(p.price, p.currency, self.currency)
             tl = TicketLine(product=p, sell_price=sell_price)
             self.ticketlines.append(tl)
+            return tl
+        else:
+            tl.amount = tl.amount+1
             return tl
     
     def __repr__(self):
