@@ -219,7 +219,7 @@ class SalesPage(QtGui.QWidget):
             self.warnTicketSelection()
             return
         
-        dlg = PayDialog(t.total, t.currency, t.customer)
+        dlg = PayDialog(self.manager)
         dlg.exec_()
         if dlg.payment is not None:
             payment_method, paid = dlg.payment

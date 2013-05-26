@@ -1,12 +1,21 @@
 from PySide import QtGui, QtCore
 
+import cbpos
+import sys
+
+logger = cbpos.get_logger(__name__)
+
 class PayDialog(QtGui.QDialog):
-    def __init__(self, value, currency_, customer_, disabled=[]):
+    def __init__(self, manager):
         super(PayDialog, self).__init__()
 
-        self.value = value
-        self.currency = currency_
-        self.customer = customer_
+        self.manager = manager
+        
+        assert self.manager.ticket is not None, 'Ticket in PayDialog is None'
+
+        self.value = self.manager.ticket.total
+        self.currency = self.manager.currency
+        self.customer = self.manager.ticket.customer
         self.payment = None
         
         self.tabs = QtGui.QTabWidget()
@@ -26,11 +35,15 @@ class PayDialog(QtGui.QDialog):
                   FreePage(self),
                   DebtPage(self)
                   )
+        
+        payment_methods = self.manager.payment_methods
+        
         for p, page in enumerate(panels):
             self.tabs.addTab(page, page.icon, page.label)
-            if not page.isAllowed() or page.payment[0] in disabled:
+            if not page.isAllowed() or page.payment[0] not in payment_methods:
                 tab_bar.setTabEnabled(p+1, False)
             elif selected is None:
+                # Select the first enabled page
                 selected = p
                 self.tabs.setCurrentIndex(p)
 
@@ -39,14 +52,14 @@ class PayDialog(QtGui.QDialog):
         self.okBtn = buttonBox.addButton(QtGui.QDialogButtonBox.Ok)
         self.okBtn.pressed.connect(self.onOkButton)
         
-        self.printBtn = buttonBox.addButton("Print", QtGui.QDialogButtonBox.ActionRole)
+        self.printBtn = buttonBox.addButton(cbpos.tr.sales._("Print"), QtGui.QDialogButtonBox.ActionRole)
         self.printBtn.pressed.connect(self.onPrintButton)
         
         self.cancelBtn = buttonBox.addButton(QtGui.QDialogButtonBox.Cancel)
         self.cancelBtn.pressed.connect(self.onCancelButton)
         
         valueLayout = QtGui.QHBoxLayout()
-        valueLayout.addWidget(QtGui.QLabel("Due Total"))
+        valueLayout.addWidget(QtGui.QLabel(cbpos.tr.sales._("Due Total")))
         valueLayout.addWidget(self.due)
         
         layout = QtGui.QVBoxLayout()
@@ -71,147 +84,161 @@ class PayDialog(QtGui.QDialog):
         self.payment = None
         self.close()
 
-class CashPage(QtGui.QWidget):
-    label = "Cash"
-    icon = './res/sales/images/pay-cash.png'
-    payment = ("cash", True)
-    
+class AbstractPage(QtGui.QWidget):
     def __init__(self, dialog):
-        super(CashPage, self).__init__()
-
+        super(AbstractPage, self).__init__()
+        
         self.dialog = dialog
+        self.manager = self.dialog.manager
+        
+        if self.icon_path is not None:
+            self.icon = QtGui.QIcon(self.icon_path)
+        else:
+            self.icon = QtGui.QIcon()
+    
+    @property
+    def label(self):
+        return None
+    
+    @property
+    def payment(self):
+        return (None, None)
 
-        self.icon = QtGui.QIcon(self.icon)
+    @property
+    def icon_path(self):
+        return None
+    
+    def isAllowed(self):
+        return True
 
+    def paymentOk(self):
+        return False
+
+class CashPage(AbstractPage):
+    def __init__(self, dialog):
+        super(CashPage, self).__init__(dialog)
+        
         self.given = QtGui.QDoubleSpinBox()
+        self.given.setRange(0, sys.maxint)
         self.given.valueChanged.connect(self.onGivenValueChanged)
         
         self.change = QtGui.QLineEdit()
         self.change.setReadOnly(True)
         
         form = QtGui.QFormLayout()
-        form.addRow("Given", self.given)
-        form.addRow("Change", self.change)
+        form.addRow(cbpos.tr.sales._("Given"), self.given)
+        form.addRow(cbpos.tr.sales._("Change"), self.change)
         
         self.setLayout(form)
         
         self.givenValue = self.dialog.value
         self.changeValue = 0
 
-        tc = self.dialog.currency
         self.given.setValue(self.givenValue)
-        self.change.setText(tc.format(self.changeValue))
+        self.change.setText(self.manager.currency_display(self.changeValue))
 
-    def isAllowed(self):
-        return True
+    @property
+    def label(self):
+        return cbpos.tr.sales._("Cash")
+    
+    @property
+    def payment(self):
+        return ("cash", True)
+    
+    @property
+    def icon_path(self):
+        return cbpos.res.sales('images/pay-cash.png')
 
     def paymentOk(self):
         if self.givenValue < self.dialog.value:
-            tc = self.dialog.currency
-            QtGui.QMessageBox.warning(self, 'Pay ticket', 'Not enough. %s remaining.' % (tc.format(-self.changeValue),))
+            message = cbpos.tr.sales._('Not enough. {value} remaining.').format(
+                        value=self.manager.currency_display(-self.changeValue))
+            QtGui.QMessageBox.warning(self, cbpos.tr.sales._('Pay ticket'), message)
             return False
         elif self.givenValue > self.dialog.value:
-            tc = self.dialog.currency
-            QtGui.QMessageBox.warning(self, 'Pay Ticket', 'Return change: %s.' % (tc.format(self.changeValue),))
+            message = cbpos.tr.sales._('Return change: {value}.').format(
+                        value=self.manager.currency_display(self.changeValue))
+            QtGui.QMessageBox.warning(self, cbpos.tr.sales._('Pay Ticket'), message)
             return True
         else:
             return True
 
     def onGivenValueChanged(self):
         try:
-            self.givenValue = float(self.given.value())
-        except:
+            from decimal import Decimal
+            self.givenValue = Decimal(self.given.value())
+        except Exception as e:
             self.givenValue = 0
+            logger.error(e)
         self.changeValue = self.givenValue-self.dialog.value
         
-        tc = self.dialog.currency
-        self.change.setText(tc.format(self.changeValue))
-
-class ChequePage(QtGui.QWidget):
-    label = "Cheque"
-    icon = './res/sales/images/pay-cheque.png'
-    payment = ("cheque", True)
-    
-    def __init__(self, dialog):
-        super(ChequePage, self).__init__()
-
-        self.dialog = dialog
+        # TODO: use rounding to closest unit
         
-        self.icon = QtGui.QIcon(self.icon)
+        self.change.setText(self.manager.currency_display(self.changeValue))
 
-    def isAllowed(self):
-        return True
+class ChequePage(AbstractPage):
+    @property
+    def label(self):
+        return cbpos.tr.sales._("Cheque")
+    
+    @property
+    def payment(self):
+        return ("cheque", True)
+    
+    @property
+    def icon_path(self):
+        return cbpos.res.sales('images/pay-cheque.png')
 
     def paymentOk(self):
         return True
 
-class VoucherPage(QtGui.QWidget):
-    label = "Voucher"
-    icon = './res/sales/images/pay-voucher.png'
-    payment = ("voucher", True)
-    
+class VoucherPage(CashPage):
     def __init__(self, dialog):
-        super(VoucherPage, self).__init__()
-
-        self.dialog = dialog
-
-        self.icon = QtGui.QIcon(self.icon)
+        AbstractPage.__init__(self, dialog)
 
         self.given = QtGui.QDoubleSpinBox()
+        self.given.setRange(0, sys.maxint)
         self.given.valueChanged.connect(self.onGivenValueChanged)
         
         self.change = QtGui.QLineEdit()
         self.change.setReadOnly(True)
         
         form = QtGui.QFormLayout()
-        form.addRow("Voucher Value", self.given)
-        form.addRow("Change", self.change)
+        form.addRow(cbpos.tr.sales._("Voucher Value"), self.given)
+        form.addRow(cbpos.tr.sales._("Change"), self.change)
         
         self.setLayout(form)
         
         self.givenValue = self.dialog.value
         self.changeValue = 0
 
-        tc = self.dialog.currency
         self.given.setValue(self.givenValue)
-        self.change.setText(tc.format(self.changeValue))
-
-    def isAllowed(self):
-        return True
-
-    def paymentOk(self):
-        if self.givenValue < self.dialog.value:
-            tc = self.dialog.currency
-            QtGui.QMessageBox.warning(self, 'Pay ticket', 'Not enough. %s remaining.' % (tc.format(-self.changeValue),))
-            return False
-        elif self.givenValue > self.dialog.value:
-            tc = self.dialog.currency
-            QtGui.QMessageBox.warning(self, 'Pay Ticket', 'Return change: %s.' % (tc.format(self.changeValue),))
-            return True
-        else:
-            return True
-
-    def onGivenValueChanged(self):
-        try:
-            self.givenValue = float(self.given.value())
-        except:
-            self.givenValue = 0
-        self.changeValue = self.givenValue-self.dialog.value
-        
-        tc = self.dialog.currency
-        self.change.setText(tc.format(self.changeValue))
-
-class CardPage(QtGui.QWidget):
-    label = "Card"
-    icon = './res/sales/images/pay-card.png'
-    payment = ("card", True)
+        self.change.setText(self.manager.currency_display(self.changeValue))
     
-    def __init__(self, dialog):
-        super(CardPage, self).__init__()
+    @property
+    def label(self):
+        return cbpos.tr.sales._("Voucher")
+    
+    @property
+    def payment(self):
+        return ("voucher", True)
+    
+    @property
+    def icon_path(self):
+        return cbpos.res.sales('images/pay-voucher.png')
 
-        self.dialog = dialog
-        
-        self.icon = QtGui.QIcon(self.icon)
+class CardPage(AbstractPage):
+    @property
+    def label(self):
+        return cbpos.tr.sales._("Card")
+    
+    @property
+    def payment(self):
+        return ("card", True)
+    
+    @property
+    def icon_path(self):
+        return cbpos.res.sales('images/pay-card.png')
 
     def isAllowed(self):
         return False
@@ -219,17 +246,18 @@ class CardPage(QtGui.QWidget):
     def paymentOk(self):
         return False
 
-class FreePage(QtGui.QWidget):
-    label = "Free"
-    icon = './res/sales/images/pay-free.png'
-    payment = ("free", False)
+class FreePage(AbstractPage):
+    @property
+    def label(self):
+        return cbpos.tr.sales._("Free")
     
-    def __init__(self, dialog):
-        super(FreePage, self).__init__()
-
-        self.dialog = dialog
-        
-        self.icon = QtGui.QIcon(self.icon)
+    @property
+    def payment(self):
+        return ("free", False)
+    
+    @property
+    def icon_path(self):
+        return cbpos.res.sales('images/pay-free.png')
 
     def isAllowed(self):
         return self.dialog.customer is not None
@@ -237,17 +265,10 @@ class FreePage(QtGui.QWidget):
     def paymentOk(self):
         return True
 
-class DebtPage(QtGui.QWidget):
-    label = "Debt"
-    icon = './res/sales/images/pay-debt.png'
-    payment = ("debt", False)
+class DebtPage(AbstractPage):
     
     def __init__(self, dialog):
-        super(DebtPage, self).__init__()
-
-        self.dialog = dialog
-        
-        self.icon = QtGui.QIcon(self.icon)
+        super(DebtPage, self).__init__(dialog)
 
         self.debt = QtGui.QLineEdit()
         self.debt.setReadOnly(True)
@@ -262,22 +283,34 @@ class DebtPage(QtGui.QWidget):
         self.currentDebt.setReadOnly(True)
         
         form = QtGui.QFormLayout()
-        rows = (("Debt", self.debt),
-                ("Customer", self.name),
-                ("Max Debt", self.maxDebt),
-                ("Current Debt", self.currentDebt))
+        rows = ((cbpos.tr.sales._("Debt"), self.debt),
+                (cbpos.tr.sales._("Customer"), self.name),
+                (cbpos.tr.sales._("Max Debt"), self.maxDebt),
+                (cbpos.tr.sales._("Current Debt"), self.currentDebt))
         
         [form.addRow(*row) for row in rows]
         
         self.setLayout(form)
 
-        tc = self.dialog.currency
-        self.debt.setText(tc.format(self.dialog.value))
-        if self.dialog.customer is not None:
-            cc = self.dialog.customer.currency
-            self.name.setText(self.dialog.customer.name)
-            self.maxDebt.setText(cc.format(self.dialog.customer.max_debt))
-            self.currentDebt.setText(cc.format(self.dialog.customer.debt))
+        self.debt.setText(self.manager.currency_display(self.dialog.value))
+        c = self.dialog.customer
+        if c is not None:
+            cc = c.currency
+            self.name.setText(c.name)
+            self.maxDebt.setText(cc.format(c.max_debt))
+            self.currentDebt.setText(cc.format(c.debt))
+
+    @property
+    def label(self):
+        return cbpos.tr.sales._("Debt")
+    
+    @property
+    def payment(self):
+        return ("debt", False)
+    
+    @property
+    def icon_path(self):
+        return cbpos.res.sales('images/pay-debt.png')
 
     def isAllowed(self):
         return self.dialog.customer is not None

@@ -219,3 +219,11 @@ class SalesManager(object):
             self.ticket.update(customer=c, discount=c.discount)
         else:
             self.ticket.update(customer=None, discount=0)
+    
+    # Payment
+    
+    @property
+    def payment_methods(self):
+        # TODO: The payment options should be configurable, and depend on permissions
+        return ('cash', 'cheque', 'card', 'voucher', 'free', 'debt')
+    
