@@ -72,7 +72,24 @@ class PayDialog(QtGui.QDialog):
         self.due.setText(self.currency.format(self.value))
 
     def onPrintButton(self):
-        QtGui.QMessageBox.information(self, "Print receipt", "Sorry, not available right now.")
+        from cbpos.mod.base.controllers.printer import PrinterManager, Printer, TablePrintJob
+        man = PrinterManager()
+        printer = man.prompt("test")
+        
+        if printer is None:
+            return
+        
+        tc = self.manager.ticket.currency
+        
+        job = TablePrintJob(data=[(tl.description, tl.amount, tc.format(tl.total)) for tl in self.manager.ticket.ticketlines],
+                            headers=("Description", "Qty", "Total"),
+                            footers=("", "Total:", tc.format(self.manager.ticket.total))
+                            )
+        
+        job.header = "TEL: 04/534031 - 04/534032"
+        job.footer = "THANK YOU FOR UR VISIT"
+        
+        printer.preview(job)
 
     def onOkButton(self):
         page = self.tabs.currentWidget()
