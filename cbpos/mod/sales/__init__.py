@@ -3,7 +3,6 @@ from cbpos.modules import BaseModuleLoader
 
 class ModuleLoader(BaseModuleLoader):
     dependencies = ('base', 'currency', 'auth', 'stock', 'customer')
-    config = [['mod.sales', {}]]
     name = 'Sales and Debt Support'
 
     def load(self):
