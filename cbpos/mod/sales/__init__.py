@@ -1,3 +1,5 @@
+from pydispatch import dispatcher
+
 import cbpos
 from cbpos.modules import BaseModuleLoader
 
@@ -40,6 +42,12 @@ class ModuleLoader(BaseModuleLoader):
     
         [session.add(tl) for tl in (tl1, tl2, tl3, tl4, tl5)]
         session.commit()
+
+    def init(self):
+        dispatcher.send(signal='printing-function-register', sender='sales',
+                        function='print-ticket')
+        
+        return True
 
     def menu(self):
         from cbpos.interface import MenuItem

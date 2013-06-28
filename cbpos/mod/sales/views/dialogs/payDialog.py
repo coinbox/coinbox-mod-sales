@@ -1,3 +1,5 @@
+from pydispatch import dispatcher
+
 from PySide import QtGui, QtCore
 
 import cbpos
@@ -72,16 +74,11 @@ class PayDialog(QtGui.QDialog):
         self.due.setText(self.currency.format(self.value))
 
     def onPrintButton(self):
-        from cbpos.mod.base.controllers.printer import PrinterManager, Printer, TablePrintJob
-        man = PrinterManager()
-        printer = man.prompt("test")
-        
-        if printer is None:
-            return
+        from cbpos.mod.base.controllers import printing
         
         tc = self.manager.ticket.currency
         
-        job = TablePrintJob(data=[(tl.description, tl.amount, tc.format(tl.total)) for tl in self.manager.ticket.ticketlines],
+        job = printing.TablePrintJob(data=[(tl.description, tl.amount, tc.format(tl.total)) for tl in self.manager.ticket.ticketlines],
                             headers=("Description", "Qty", "Total"),
                             footers=("", "Total:", tc.format(self.manager.ticket.total))
                             )
@@ -89,7 +86,8 @@ class PayDialog(QtGui.QDialog):
         job.header = "TEL: 04/534031 - 04/534032"
         job.footer = "THANK YOU FOR UR VISIT"
         
-        printer.preview(job)
+        dispatcher.send(signal='printing-handle', sender='sales',
+                        function='print-ticket', job=job)
 
     def onOkButton(self):
         page = self.tabs.currentWidget()
