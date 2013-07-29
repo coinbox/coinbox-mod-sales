@@ -44,7 +44,7 @@ class ModuleLoader(BaseModuleLoader):
         session.commit()
 
     def init(self):
-        dispatcher.send(signal='printing-function-register', sender='sales',
+        dispatcher.send(signal='printing-register-function', sender='sales',
                         function='print-ticket')
         
         return True
