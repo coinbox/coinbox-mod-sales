@@ -99,7 +99,7 @@ class TicketLine(cbpos.database.Base, common.Item):
         """
         return self.amount*self.sell_price
     
-    @total.expression
+    @subtotal.expression
     def subtotal(self):
         return self.amount*self.sell_price
 
