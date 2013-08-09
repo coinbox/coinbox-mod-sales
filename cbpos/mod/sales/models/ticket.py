@@ -17,7 +17,7 @@ class Ticket(cbpos.database.Base, common.Item):
     id = Column(Integer, primary_key=True)
     date_open = Column(DateTime, nullable=True, default=func.current_timestamp())
     date_close = Column(DateTime, nullable=True)
-    payment_method = Column(Enum('cash', 'cheque', 'voucher', 'card', 'free', 'debt'), nullable=True)
+    payment_method = Column(Enum('cash', 'cheque', 'voucher', 'card', 'free', 'debt', name="payment_method_enum"), nullable=True)
     date_paid = Column(DateTime, nullable=True)
     comment = Column(String(255), nullable=True)
     discount = Column(Integer, nullable=False, default=0)
