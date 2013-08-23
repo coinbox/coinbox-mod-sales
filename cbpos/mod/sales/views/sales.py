@@ -33,9 +33,9 @@ class SalesPage(QtGui.QWidget):
         self.currency = QtGui.QComboBox()
         self.currency.setEditable(False)
         
-        self.discount = QtGui.QDoubleSpinBox()
-        self.discount.setRange(0.0, 100.0)
-        self.discount.setSingleStep(5.0)
+        self.discount = QtGui.QSpinBox()
+        self.discount.setRange(0, 100)
+        self.discount.setSingleStep(5)
         self.discount.setSuffix('%')
         
         self.total = TotalPanel(self.manager)
