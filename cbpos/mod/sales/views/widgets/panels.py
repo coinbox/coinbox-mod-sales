@@ -3,6 +3,7 @@ from PySide import QtGui, QtCore
 import cbpos
 
 import babel.numbers
+from decimal import Decimal
 
 logger = cbpos.get_logger(__name__)
 
@@ -97,20 +98,27 @@ class TicketTable(QtGui.QTableWidget):
         icon = QtGui.QIcon.fromTheme('edit-delete')
         for row, tl in enumerate(tls):
             cols = (
-                    ('* ' if tl.is_edited else ''),
-                    tl.description,
-                    self.manager.currency_display(tl.sell_price),
-                    u'x{}'.format(babel.numbers.format_number(tl.amount, locale=cbpos.locale)),
-                    babel.numbers.format_percent(tl.discount, locale=cbpos.locale),
-                    self.manager.currency_display(tl.total)
-                    )
-            
-            for col, item_text in enumerate(cols):
-                table_item = QtGui.QTableWidgetItem(item_text)
-                table_item.setData(QtCore.Qt.UserRole+1, tl)
-                # Items are not enabled
-                table_item.setFlags(table_item.flags() ^ QtCore.Qt.ItemIsEditable)
-                self.setItem(row, col, table_item)
+                # Amount
+                u'{}x'.format(babel.numbers.format_number(tl.amount,
+                                                          locale=cbpos.locale)),
+                
+                # [Edited] Description
+                u'{}{}'.format('[*] ' if tl.is_edited else '', tl.description),
+                
+                # Unit Sell Price
+                self.manager.currency_display(tl.sell_price),
+                
+                # Taxes
+                u'+ {}'.format(self.manager.currency_display(tl.taxes)),
+                
+                # Discount
+                '' if tl.discount == 0 else \
+                    babel.numbers.format_percent(-Decimal(tl.discount)/100,
+                                                 locale=cbpos.locale),
+                
+                # Line Total
+                self.manager.currency_display(tl.total),
+            )
             
             # Check if the icon is available, or fall back to text
             if icon.isNull():
@@ -121,7 +129,23 @@ class TicketTable(QtGui.QTableWidget):
             
             controls_item.callback = lambda a=tl: self.onDelete(a)
             controls_item.pressed.connect(controls_item.callback)
-            self.setCellWidget(row, col+1, controls_item)
+            
+            # Add the delete button in the beginning
+            self.setCellWidget(row, 0, controls_item)
+            
+            # Then add the other columns
+            for col, item_text in enumerate(cols):
+                table_item = QtGui.QTableWidgetItem(item_text)
+                table_item.setData(QtCore.Qt.UserRole+1, tl)
+                # Items are not enabled
+                table_item.setFlags(table_item.flags() ^ QtCore.Qt.ItemIsEditable)
+                
+                # Add 1 to columns, because there is one column before them all
+                self.setItem(row, col + 1, table_item)
+            
+            # The last item aligns to the right
+            table_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+            
         self.resizeColumnsToContents()
         self.horizontalHeader().setStretchLastSection(True)
     

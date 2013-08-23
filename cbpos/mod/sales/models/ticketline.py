@@ -86,11 +86,11 @@ class TicketLine(cbpos.database.Base, common.Item):
         """
         Returns the total, including taxes and discounts.
         """
-        return self.amount*self.sell_price*(100-self.discount)/100
+        return (self.taxes + self.sell_price * self.amount) * (100-self.discount)/100
     
     @total.expression
     def total(self):
-        return self.amount*self.sell_price*(100-self.discount)/100
+        return (self.taxes + self.sell_price * self.amount) * (100-self.discount)/100
     
     @hybrid_property
     def subtotal(self):

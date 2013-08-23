@@ -88,14 +88,13 @@ class Ticket(cbpos.database.Base, common.Item):
         """
         session = cbpos.database.session()
         
-        query = session.query(func.sum(TicketLine.total), func.sum(TicketLine.taxes))
-        query = query.filter(TicketLine.ticket == self)
-        total, taxes = query.one()
+        query = session.query(func.sum(TicketLine.total)).filter(TicketLine.ticket == self)
+        total = query.one()[0]
         
-        total = total if total is not None else 0
-        taxes = taxes if taxes is not None else 0
-        
-        return total*(100-self.discount)/100+taxes
+        if total is None:
+            return 0
+        else:
+            return total*(100-self.discount)/100
     
     @hybrid_property
     def subtotal(self):
