@@ -74,7 +74,7 @@ class PayDialog(QtGui.QDialog):
         self.due.setText(self.currency.format(self.value))
 
     def onPrintButton(self):
-        from cbpos.mod.base.controllers import printing
+        from cbmod.base.controllers import printing
         
         tc = self.manager.ticket.currency
         

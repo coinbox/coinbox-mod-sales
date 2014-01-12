@@ -2,14 +2,14 @@ from PySide import QtGui, QtCore
 
 import cbpos
 
-from cbpos.mod.sales.controllers import SalesManager, TicketSelectionException
-from cbpos.mod.currency.controllers import convert
+from cbmod.sales.controllers import SalesManager, TicketSelectionException
+from cbmod.currency.controllers import convert
 
-from cbpos.mod.stock.views.widgets import ProductCatalog
-from cbpos.mod.customer.views.dialogs import CustomerChooserDialog
+from cbmod.stock.views.widgets import ProductCatalog
+from cbmod.customer.views.dialogs import CustomerChooserDialog
 
-from cbpos.mod.sales.views.dialogs import EditDialog, PayDialog
-from cbpos.mod.sales.views.widgets import TotalPanel, LogoPanel, TicketTable
+from cbmod.sales.views.dialogs import EditDialog, PayDialog
+from cbmod.sales.views.widgets import TotalPanel, LogoPanel, TicketTable
 
 class SalesPage(QtGui.QWidget):
     def __init__(self):

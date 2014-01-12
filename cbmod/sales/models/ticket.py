@@ -1,11 +1,11 @@
 import cbpos
 
-import cbpos.mod.base.models.common as common
+import cbmod.base.models.common as common
 
-import cbpos.mod.currency.controllers as currency
+import cbmod.currency.controllers as currency
 
-from cbpos.mod.stock.models.product import Product
-from cbpos.mod.sales.models.ticketline import TicketLine
+from cbmod.stock.models.product import Product
+from cbmod.sales.models.ticketline import TicketLine
 
 from sqlalchemy import func, cast, Table, Column, Integer, String, Float, Boolean, Enum, DateTime, MetaData, ForeignKey
 from sqlalchemy.orm import relationship, backref

@@ -5,17 +5,17 @@ from cbpos.modules import BaseModuleLoader
 
 class ModuleLoader(BaseModuleLoader):
     def load_models(self):
-        from cbpos.mod.sales.models import Ticket, TicketLine
+        from cbmod.sales.models import Ticket, TicketLine
         return [Ticket, TicketLine]
 
     def test_models(self):
-        from cbpos.mod.sales.models import Ticket, TicketLine
+        from cbmod.sales.models import Ticket, TicketLine
     
         session = cbpos.database.session()
     
-        from cbpos.mod.currency.models import Currency
-        from cbpos.mod.auth.models import User
-        from cbpos.mod.customer.models import Customer
+        from cbmod.currency.models import Currency
+        from cbmod.auth.models import User
+        from cbmod.customer.models import Customer
     
         cu1 = session.query(Currency).filter_by(id="LBP").one()
         cu2 = session.query(Currency).filter_by(id="USD").one()
@@ -27,7 +27,7 @@ class ModuleLoader(BaseModuleLoader):
         t1 = Ticket(discount=0, currency=cu1, user=u1, customer=None, comment='Test ticket 1')
         t2 = Ticket(discount=30, currency=cu2, user=u1, customer=c1, comment='Test ticket 2')
     
-        from cbpos.mod.stock.models import Product
+        from cbmod.stock.models import Product
         
         p1 = session.query(Product).filter_by(id=1).one()
     
@@ -48,7 +48,7 @@ class ModuleLoader(BaseModuleLoader):
 
     def menu(self):
         from cbpos.interface import MenuItem
-        from cbpos.mod.sales.views import SalesPage # DebtsPage
+        from cbmod.sales.views import SalesPage # DebtsPage
         
         """
                  MenuItem('debts', parent='main',

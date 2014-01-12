@@ -2,12 +2,12 @@ from pydispatch import dispatcher
 
 import cbpos
 
-from cbpos.mod.auth.controllers import user
-import cbpos.mod.currency.controllers as currency
+from cbmod.auth.controllers import user
+import cbmod.currency.controllers as currency
 
-from cbpos.mod.sales.models import Ticket, TicketLine
+from cbmod.sales.models import Ticket, TicketLine
 
-from cbpos.mod.currency.models import Currency
+from cbmod.currency.models import Currency
 
 logger = cbpos.get_logger(__name__)
 
