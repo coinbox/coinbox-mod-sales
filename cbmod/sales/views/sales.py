@@ -19,14 +19,14 @@ class SalesPage(QtGui.QWidget):
         
         self.customer = QtGui.QLineEdit()
         self.customer.setReadOnly(True)
-        self.customer.setPlaceholderText(cbpos.tr.sales._('No customer selected'))
+        self.customer.setPlaceholderText(cbpos.tr.sales_('No customer selected'))
         
-        self.customerBtn = QtGui.QPushButton(cbpos.tr.sales._('Choose'))
+        self.customerBtn = QtGui.QPushButton(cbpos.tr.sales_('Choose'))
         
         self.tickets = QtGui.QComboBox()
         self.tickets.setEditable(False)
         
-        self.newTicketBtn = QtGui.QPushButton(cbpos.tr.sales._("New"))
+        self.newTicketBtn = QtGui.QPushButton(cbpos.tr.sales_("New"))
         
         self.ticketTable = TicketTable(self.manager)
         
@@ -42,11 +42,11 @@ class SalesPage(QtGui.QWidget):
         
         self.logo = LogoPanel(self.manager)
         
-        self.catalogLbl = QtGui.QLabel(cbpos.tr.sales._("Choose a product"))
+        self.catalogLbl = QtGui.QLabel(cbpos.tr.sales_("Choose a product"))
         self.catalog = ProductCatalog()
         
-        self.payBtn = QtGui.QPushButton(cbpos.tr.sales._("Pay"))
-        self.cancelBtn = QtGui.QPushButton(cbpos.tr.sales._("Cancel"))
+        self.payBtn = QtGui.QPushButton(cbpos.tr.sales_("Pay"))
+        self.cancelBtn = QtGui.QPushButton(cbpos.tr.sales_("Cancel"))
         
         layout = QtGui.QVBoxLayout()
         
@@ -181,10 +181,10 @@ class SalesPage(QtGui.QWidget):
         self.populate()
 
     def warnTicketSelection(self):
-        QtGui.QMessageBox.warning(self, cbpos.tr.sales._('No ticket'), cbpos.tr.sales._('Select a ticket.'))
+        QtGui.QMessageBox.warning(self, cbpos.tr.sales_('No ticket'), cbpos.tr.sales_('Select a ticket.'))
     
     def warnTicketlineSelection(self):
-        QtGui.QMessageBox.warning(self, cbpos.tr.sales._('No ticketline'), cbpos.tr.sales._('Select a ticketline.'))
+        QtGui.QMessageBox.warning(self, cbpos.tr.sales_('No ticketline'), cbpos.tr.sales_('Select a ticketline.'))
 
     def addAmount(self, inc):
         if self.manager.ticket is None:

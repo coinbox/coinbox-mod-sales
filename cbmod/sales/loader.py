@@ -52,7 +52,7 @@ class ModuleLoader(BaseModuleLoader):
         
         """
                  MenuItem('debts', parent='main',
-                          label=cbpos.tr.sales._('Debts'),
+                          label=cbpos.tr.sales_('Debts'),
                           icon=cbpos.res.sales('images/menu-debts.png'),
                           rel=0,
                           priority=4,
@@ -62,7 +62,7 @@ class ModuleLoader(BaseModuleLoader):
         
         return [[],
                 [MenuItem('sales', parent='main',
-                          label=cbpos.tr.sales._('Sales'),
+                          label=cbpos.tr.sales_('Sales'),
                           icon=cbpos.res.sales('images/menu-sales.png'),
                           rel=0,
                           priority=5,

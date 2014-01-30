@@ -22,11 +22,11 @@ class TotalPanel(QtGui.QFrame):
         self.setFrameShadow(QtGui.QFrame.Sunken)
         
         layout = QtGui.QGridLayout()
-        layout.addWidget(QtGui.QLabel(cbpos.tr.sales._("Subtotal")), 0, 0)
+        layout.addWidget(QtGui.QLabel(cbpos.tr.sales_("Subtotal")), 0, 0)
         layout.addWidget(self.subtotal, 0, 1)
-        layout.addWidget(QtGui.QLabel(cbpos.tr.sales._("Tax")), 1, 0)
+        layout.addWidget(QtGui.QLabel(cbpos.tr.sales_("Tax")), 1, 0)
         layout.addWidget(self.tax, 1, 1)
-        layout.addWidget(QtGui.QLabel(cbpos.tr.sales._("Total")), 2, 0)
+        layout.addWidget(QtGui.QLabel(cbpos.tr.sales_("Total")), 2, 0)
         layout.addWidget(self.total, 2, 1)
         
         layout.setColumnStretch(0, 1)
@@ -122,7 +122,7 @@ class TicketTable(QtGui.QTableWidget):
             
             # Check if the icon is available, or fall back to text
             if icon.isNull():
-                controls_item = QtGui.QPushButton(cbpos.tr.sales._('Delete'))
+                controls_item = QtGui.QPushButton(cbpos.tr.sales_('Delete'))
             else:
                 controls_item = QtGui.QPushButton()
                 controls_item.setIcon(icon)

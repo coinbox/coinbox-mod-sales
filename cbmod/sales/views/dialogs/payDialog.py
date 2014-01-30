@@ -54,14 +54,14 @@ class PayDialog(QtGui.QDialog):
         self.okBtn = buttonBox.addButton(QtGui.QDialogButtonBox.Ok)
         self.okBtn.pressed.connect(self.onOkButton)
         
-        self.printBtn = buttonBox.addButton(cbpos.tr.sales._("Print"), QtGui.QDialogButtonBox.ActionRole)
+        self.printBtn = buttonBox.addButton(cbpos.tr.sales_("Print"), QtGui.QDialogButtonBox.ActionRole)
         self.printBtn.pressed.connect(self.onPrintButton)
         
         self.cancelBtn = buttonBox.addButton(QtGui.QDialogButtonBox.Cancel)
         self.cancelBtn.pressed.connect(self.onCancelButton)
         
         valueLayout = QtGui.QHBoxLayout()
-        valueLayout.addWidget(QtGui.QLabel(cbpos.tr.sales._("Due Total")))
+        valueLayout.addWidget(QtGui.QLabel(cbpos.tr.sales_("Due Total")))
         valueLayout.addWidget(self.due)
         
         layout = QtGui.QVBoxLayout()
@@ -141,8 +141,8 @@ class CashPage(AbstractPage):
         self.change.setReadOnly(True)
         
         form = QtGui.QFormLayout()
-        form.addRow(cbpos.tr.sales._("Given"), self.given)
-        form.addRow(cbpos.tr.sales._("Change"), self.change)
+        form.addRow(cbpos.tr.sales_("Given"), self.given)
+        form.addRow(cbpos.tr.sales_("Change"), self.change)
         
         self.setLayout(form)
         
@@ -154,7 +154,7 @@ class CashPage(AbstractPage):
 
     @property
     def label(self):
-        return cbpos.tr.sales._("Cash")
+        return cbpos.tr.sales_("Cash")
     
     @property
     def payment(self):
@@ -166,14 +166,14 @@ class CashPage(AbstractPage):
 
     def paymentOk(self):
         if self.givenValue < self.dialog.value:
-            message = cbpos.tr.sales._('Not enough. {value} remaining.').format(
+            message = cbpos.tr.sales_('Not enough. {value} remaining.').format(
                         value=self.manager.currency_display(-self.changeValue))
-            QtGui.QMessageBox.warning(self, cbpos.tr.sales._('Pay ticket'), message)
+            QtGui.QMessageBox.warning(self, cbpos.tr.sales_('Pay ticket'), message)
             return False
         elif self.givenValue > self.dialog.value:
-            message = cbpos.tr.sales._('Return change: {value}.').format(
+            message = cbpos.tr.sales_('Return change: {value}.').format(
                         value=self.manager.currency_display(self.changeValue))
-            QtGui.QMessageBox.warning(self, cbpos.tr.sales._('Pay Ticket'), message)
+            QtGui.QMessageBox.warning(self, cbpos.tr.sales_('Pay Ticket'), message)
             return True
         else:
             return True
@@ -194,7 +194,7 @@ class CashPage(AbstractPage):
 class ChequePage(AbstractPage):
     @property
     def label(self):
-        return cbpos.tr.sales._("Cheque")
+        return cbpos.tr.sales_("Cheque")
     
     @property
     def payment(self):
@@ -219,8 +219,8 @@ class VoucherPage(CashPage):
         self.change.setReadOnly(True)
         
         form = QtGui.QFormLayout()
-        form.addRow(cbpos.tr.sales._("Voucher Value"), self.given)
-        form.addRow(cbpos.tr.sales._("Change"), self.change)
+        form.addRow(cbpos.tr.sales_("Voucher Value"), self.given)
+        form.addRow(cbpos.tr.sales_("Change"), self.change)
         
         self.setLayout(form)
         
@@ -232,7 +232,7 @@ class VoucherPage(CashPage):
     
     @property
     def label(self):
-        return cbpos.tr.sales._("Voucher")
+        return cbpos.tr.sales_("Voucher")
     
     @property
     def payment(self):
@@ -245,7 +245,7 @@ class VoucherPage(CashPage):
 class CardPage(AbstractPage):
     @property
     def label(self):
-        return cbpos.tr.sales._("Card")
+        return cbpos.tr.sales_("Card")
     
     @property
     def payment(self):
@@ -264,7 +264,7 @@ class CardPage(AbstractPage):
 class FreePage(AbstractPage):
     @property
     def label(self):
-        return cbpos.tr.sales._("Free")
+        return cbpos.tr.sales_("Free")
     
     @property
     def payment(self):
@@ -298,10 +298,10 @@ class DebtPage(AbstractPage):
         self.currentDebt.setReadOnly(True)
         
         form = QtGui.QFormLayout()
-        rows = ((cbpos.tr.sales._("Debt"), self.debt),
-                (cbpos.tr.sales._("Customer"), self.name),
-                (cbpos.tr.sales._("Max Debt"), self.maxDebt),
-                (cbpos.tr.sales._("Current Debt"), self.currentDebt))
+        rows = ((cbpos.tr.sales_("Debt"), self.debt),
+                (cbpos.tr.sales_("Customer"), self.name),
+                (cbpos.tr.sales_("Max Debt"), self.maxDebt),
+                (cbpos.tr.sales_("Current Debt"), self.currentDebt))
         
         [form.addRow(*row) for row in rows]
         
@@ -320,7 +320,7 @@ class DebtPage(AbstractPage):
 
     @property
     def label(self):
-        return cbpos.tr.sales._("Debt")
+        return cbpos.tr.sales_("Debt")
     
     @property
     def payment(self):
