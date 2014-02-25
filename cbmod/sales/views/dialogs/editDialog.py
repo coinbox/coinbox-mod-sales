@@ -45,7 +45,6 @@ class EditDialog(QtGui.QDialog):
         self.setLayout(form)
 
         self.data = data
-        self.populate()
 
     def populate(self):
         self.description.setText(self.data['description'])

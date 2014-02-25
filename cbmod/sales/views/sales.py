@@ -11,7 +11,9 @@ from cbmod.customer.views.dialogs import CustomerChooserDialog
 from cbmod.sales.views.dialogs import EditDialog, PayDialog
 from cbmod.sales.views.widgets import TotalPanel, LogoPanel, TicketTable
 
-class SalesPage(QtGui.QWidget):
+from cbmod.base.views import BasePage
+
+class SalesPage(BasePage):
     def __init__(self):
         super(SalesPage, self).__init__()
         
@@ -166,6 +168,9 @@ class SalesPage(QtGui.QWidget):
             self.ticketTable.empty()
         else:
             self.ticketTable.fill()
+        
+        # Fill the catalog
+        self.catalog.populate()
 
     def setCurrentTicket(self, t):
         self.manager.ticket = t
@@ -177,8 +182,6 @@ class SalesPage(QtGui.QWidget):
         self.discount.setEnabled(enabled)
         self.payBtn.setEnabled(enabled)
         self.cancelBtn.setEnabled(enabled)
-        
-        self.populate()
 
     def warnTicketSelection(self):
         QtGui.QMessageBox.warning(self, cbpos.tr.sales_('No ticket'), cbpos.tr.sales_('Select a ticket.'))
@@ -212,6 +215,7 @@ class SalesPage(QtGui.QWidget):
     
     def onNewTicketButton(self):
         self.setCurrentTicket(self.manager.new_ticket())
+        self.populate()
     
     def onCloseTicketButton(self):
         t = self.manager.ticket
@@ -225,6 +229,7 @@ class SalesPage(QtGui.QWidget):
             payment_method, paid = dlg.payment
             self.manager.close_ticket(payment_method, paid)
             self.setCurrentTicket(None)
+            self.populate()
     
     def onCancelTicketButton(self):
         try:
@@ -233,10 +238,12 @@ class SalesPage(QtGui.QWidget):
             self.warnTicketSelection()
         else:
             self.setCurrentTicket(None)
+            self.populate()
     
     def onTicketChanged(self, index):
         t = self.tickets.itemData(index)
         self.setCurrentTicket(t)
+        self.populate()
     
     def onTicketlineItemChanged(self, currentRow, currentColumn, previousRow, previousColumn):
         self.enableTicketlineActions()
